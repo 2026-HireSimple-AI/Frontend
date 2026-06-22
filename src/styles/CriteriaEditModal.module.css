@@ -1,0 +1,466 @@
+/* CriteriaEditModal.module.css */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal {
+  background-color: #FFFFFF;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 64rem; /* 1024px */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #E6EAF0;
+  animation: scaleUp 0.2s ease-out;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #E6EAF0;
+  background-color: #FFFFFF;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1C1F26;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  font-size: 0.8125rem;
+  color: #707887;
+  font-weight: 500;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.resetButton {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475467;
+  background-color: #FFFFFF;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetButton:hover {
+  background-color: #F8FAFC;
+  border-color: #00194B;
+  color: #00194B;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #E6EAF0;
+  background-color: #FFFFFF;
+  color: #707887;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #F8FAFC;
+  color: #1C1F26;
+  border-color: #CBD5E1;
+}
+
+/* 테이블 레이아웃 헤더 */
+.table {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 140px 1fr 280px;
+  gap: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #E6EAF0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475467;
+}
+
+@media (max-width: 768px) {
+  .tableHeader {
+    display: none; /* 모바일 대응 */
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 140px 1fr 280px;
+  gap: 1.5rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #E6EAF0;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+}
+
+.typeCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 대분류 타입 카드 디자인 */
+.typeCard {
+  width: 100px;
+  height: 100px;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.typeCardPrimary {
+  background-color: #EEF3FA;
+  color: #00194B;
+  border-color: #BACFFC/30;
+}
+
+.typeCardSuccess {
+  background-color: #EDFDF5;
+  color: #22C55E;
+  border-color: rgba(34, 197, 94, 0.1);
+}
+
+.typeCardWarning {
+  background-color: #FFF9F2;
+  color: #FF9D3B;
+  border-color: rgba(255, 157, 59, 0.1);
+}
+
+.detailCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.detailInputRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detailInput {
+  flex: 1;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: #344054;
+  background-color: #FFFFFF;
+  outline: none;
+  font-weight: 500;
+  transition: border-color 0.2s ease;
+}
+
+.detailInput:focus {
+  border-color: #00194B;
+}
+
+.detailWeightInput {
+  width: 3.5rem;
+  height: 2.25rem;
+  text-align: center;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: #475467;
+  background-color: #FFFFFF;
+  outline: none;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.detailWeightInput:focus {
+  border-color: #00194B;
+}
+
+.addDetailButton {
+  margin-top: 0.25rem;
+  height: 2rem;
+  border: 1px dashed #BACFFC;
+  background-color: #EEF3FA/20;
+  border-radius: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #6D5DFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.addDetailButton:hover {
+  background-color: #EEF3FA/40;
+  border-color: #6D5DFC;
+  color: #00194B;
+}
+
+.weightCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* 가중치 조절 슬라이더 영역 */
+.sliderWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.slider {
+  width: 100%;
+  height: 0.375rem;
+  border-radius: 0.25rem;
+  background-color: #EEF2F6;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: #00194B;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.625rem;
+  color: #98A0AE;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.numberInputWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.numberInput {
+  width: 4rem;
+  height: 2.25rem;
+  text-align: center;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #00194B;
+  outline: none;
+  background-color: #FFFFFF;
+  font-family: monospace;
+}
+
+.numberInput:focus {
+  border-color: #00194B;
+}
+
+.percentText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #707887;
+}
+
+/* 경고창 하부 배너 */
+.warningBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: #FFF9F2;
+  border-top: 1px solid #E6EAF0;
+  border-bottom: 1px solid #E6EAF0;
+}
+
+.warningBoxSuccess {
+  background-color: #EDFDF5;
+}
+
+.warningContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.warningText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #D97706;
+  line-height: 1.4;
+}
+
+.warningTextSuccess {
+  color: #16A34A;
+}
+
+.totalBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #FFFFFF;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.totalBoxText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475467;
+}
+
+.totalBoxValue {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #EF4444;
+  font-family: monospace;
+}
+
+.totalBoxValueSuccess {
+  color: #16A34A;
+}
+
+.footer {
+  padding: 1rem 2rem;
+  background-color: #F8FAFC;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cancelButton {
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  background-color: #FFFFFF;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #344054;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background-color: #F8FAFC;
+}
+
+.saveButton {
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  background-color: #00194B;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.saveButton:hover {
+  background-color: #002D80;
+}
+
+.saveButtonDisabled {
+  background-color: #D4D9E1;
+  color: #98A0AE;
+  cursor: not-allowed;
+}
+
+.saveButtonDisabled:hover {
+  background-color: #D4D9E1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
