@@ -1,0 +1,6 @@
+{
+  "name": "Hire Simple AI",
+  "description": "공고문과 이력서를 함께 분석하여 지원자 적합도를 평가하는 AI 기반 채용 관리 및 분석 플랫폼",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

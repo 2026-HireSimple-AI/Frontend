@@ -1,0 +1,308 @@
+/* CriteriaReviewPage.module.css */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: "Inter", -apple-system, sans-serif;
+  color: #1C1F26;
+}
+
+.headerArea {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid #E6EAF0;
+  padding-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1C1F26;
+  letter-spacing: -0.025em;
+  margin-top: 0.25rem;
+}
+
+.pageDescription {
+  font-size: 0.8125rem;
+  color: #707887;
+  margin-top: 0.25rem;
+}
+
+.processTrigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1C1F26;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #E6EAF0;
+  background-color: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+.processTrigger:hover {
+  background-color: #F6F8FC;
+  border-color: #00194B;
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .topGrid {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jobSummaryCard {
+  background-color: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.analysisResultCard {
+  background-color: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.resumeUploadCard {
+  background-color: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.criteriaWeightCard {
+  background-color: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.criteriaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.criteriaTableArea {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #E6EAF0;
+}
+
+.criteriaTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.criteriaTable th {
+  background-color: #F8FAFC;
+  font-weight: 600;
+  color: #475467;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #E6EAF0;
+}
+
+.criteriaTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #E6EAF0;
+  vertical-align: top;
+}
+
+.criteriaTable tr:last-child td {
+  border-bottom: none;
+}
+
+.criteriaInfoIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #98A0AE;
+  margin-left: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.criteriaInfoIcon:hover {
+  color: #00194B;
+}
+
+.donutChartArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background-color: #F8FAFC;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid #E6EAF0;
+}
+
+@media (min-width: 768px) {
+  .donutChartArea {
+    flex-direction: row;
+    justify-content: space-around;
+  }
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475467;
+  background-color: #FFFFFF;
+  border: 1px solid #D4D9E1;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.editButton:hover {
+  background-color: #F8FAFC;
+  border-color: #00194B;
+  color: #00194B;
+}
+
+.bottomActionArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .bottomActionArea {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.bottomNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: #F0F4FA;
+  border: 1px solid #E6EAF0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: #475467;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.nextButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  background-color: #00194B;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 2.75rem;
+  white-space: nowrap;
+}
+
+.nextButton:hover {
+  background-color: #002D80;
+}
+
+.nextButton:disabled {
+  background-color: #98A0AE;
+  cursor: not-allowed;
+}
+
+/* Tooltips */
+.tooltipPanel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: #FFFFFF;
+  border: 1px solid #D4D9E1;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  width: 100%;
+  max-width: 320px;
+  animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .tooltipPanel {
+    width: 24rem;
+    max-width: none;
+  }
+}
+
+.tooltipCard {
+  background-color: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: shadow 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
