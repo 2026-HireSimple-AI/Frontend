@@ -11,7 +11,7 @@ interface ApplicantResultCardProps {
 export default function ApplicantResultCard({ applicant }: ApplicantResultCardProps) {
   return (
     <div className={styles.resultCard} id="applicant-result-detail-card">
-      <div className={styles.resultHeader}>
+      <div className={styles.resultHeader} style={{ flexWrap: "wrap", gap: "0.5rem" }}>
         <div className={styles.resultTitleWrapper}>
           <span className={styles.resultTitle}>
             {applicant.masked_code} 분석 결과

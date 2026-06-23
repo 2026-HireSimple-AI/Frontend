@@ -22,7 +22,7 @@ export default function DetailScoreTable({
     groups[cat].push(item);
   });
 
-  const categories = ["자격 조건", "주요업무", "우대사항"];
+  const categories = ["자격 조건", "주요 업무", "우대 사항"];
 
   // 가중치 합 및 가중 반영 점수 합 계산과정검증
   const totalWeight = scoreItems.reduce((acc, cur) => acc + cur.weight, 0);

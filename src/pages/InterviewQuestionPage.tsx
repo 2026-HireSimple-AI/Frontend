@@ -135,13 +135,15 @@ export default function InterviewQuestionPage() {
       return;
     }
 
+    const applicantId = selectedApplicantId;
+
     let active = true;
 
     async function loadApplicantDetailData() {
       try {
         const [detail, fetchedQuestions] = await Promise.all([
-          getApplicantDetail(selectedApplicantId),
-          getInterviewQuestions(selectedApplicantId)
+          getApplicantDetail(applicantId),
+          getInterviewQuestions(applicantId)
         ]);
 
         if (!active) return;
