@@ -365,25 +365,25 @@ export default function CriteriaReviewPage() {
           </div>
         ) : (
           <>
+            {/* 공고 명칭 요약 카드 (상단 가로 전체 너비) */}
+            {postingError ? (
+              <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-[#EF4444] font-medium">
+                <AlertCircle size={15} />
+                <span>{postingError}</span>
+              </div>
+            ) : (
+              <JobPostingSummaryCard 
+                jobPostingTitle={jobPostingTitle} 
+                onEditJobPosting={handleEditJobPosting}
+              />
+            )}
+
             {/* 상부 2열 격자 배치 그리드 */}
             <div className={styles.topGrid}>
               
-              {/* 왼쪽 열: 공고 개요 & 공고 분석 결과 */}
+              {/* 왼쪽 열: 공고 분석 결과 */}
               <div className={styles.leftColumn}>
                 
-                {/* 공고 명칭 요약 카드 */}
-                {postingError ? (
-                  <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-[#EF4444] font-medium">
-                    <AlertCircle size={15} />
-                    <span>{postingError}</span>
-                  </div>
-                ) : (
-                  <JobPostingSummaryCard 
-                    jobPostingTitle={jobPostingTitle} 
-                    onEditJobPosting={handleEditJobPosting}
-                  />
-                )}
-
                 {/* 공고 분석 결과 리스트 */}
                 <JobPostingAnalysisResultCard 
                   formattedPostings={formattedPostings}
@@ -395,7 +395,7 @@ export default function CriteriaReviewPage() {
               </div>
 
               {/* 오른쪽 열: 이력서 업로드 모니터 카드 */}
-              <div>
+              <div className="h-full">
                 <ResumeUploadStatusCard 
                   uploadedFiles={uploadedFiles}
                   onUploadFiles={handleUploadFiles}
