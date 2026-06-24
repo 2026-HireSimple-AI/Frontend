@@ -38,7 +38,7 @@ export default function JobPostingAnalysisResultCard({
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-5">
+    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-5 h-full">
       {/* 카드 상부 헤더 */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -66,10 +66,10 @@ export default function JobPostingAnalysisResultCard({
       )}
 
       {/* 분석 카테고리 본문 리스트 */}
-      <div className="flex flex-col gap-4 min-h-[140px]">
+      <div className="flex flex-col gap-4 min-h-[140px] flex-1">
         {isRefreshing ? (
           // 다시 추출하는 동안에 보여주는 Skeleton UI 로딩 효과
-          <div className="flex flex-col gap-4 py-2">
+          <div className="flex flex-col gap-4 py-2 h-full">
             {[1, 2, 3].map((n) => (
               <div key={n} className="flex items-center gap-4 border-b border-[#F6F8FC]/60 pb-3 last:border-0 last:pb-0 animate-pulse">
                 <div className="w-[90px] h-[32px] bg-[#E2E8F0] rounded-lg flex-shrink-0" />
@@ -85,7 +85,7 @@ export default function JobPostingAnalysisResultCard({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-4 h-full"
           >
             {formattedPostings && formattedPostings.length > 0 ? (
               formattedPostings.map((post, idx) => (
@@ -102,7 +102,7 @@ export default function JobPostingAnalysisResultCard({
                 </div>
               ))
             ) : (
-              <div className="text-center py-6 text-xs text-[#98A0AE]">
+              <div className="text-center py-6 text-xs text-[#98A0AE] h-full flex items-center justify-center">
                 공고 분석 정보가 비어있습니다.
               </div>
             )}
