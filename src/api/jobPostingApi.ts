@@ -60,8 +60,7 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        input_type: "url",
-        source_url: sourceUrl
+        url: sourceUrl
       }),
     });
 
