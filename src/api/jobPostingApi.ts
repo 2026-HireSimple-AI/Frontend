@@ -41,12 +41,12 @@ export interface FormattedPostingItem {
 
 export interface FormattedPostingResponse {
   job_posting_id: number;
-  formatted_postings: FormattedPostingItem[];
+  formatted_posting: FormattedPostingItem[];
   skills_stack: string[];
 }
 
 /**
- * 1. 채용공고 등록 (POST /job-postings)
+ * 1. 채용공고 등록 (POST /job-posting)
  */
 export async function createJobPosting(sourceUrl: string, title?: string): Promise<JobPostingData> {
   const baseUrl = getApiBaseUrl();
@@ -54,16 +54,13 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
 
   try {
     // 실제 API 전송 시도
-    const response = await fetch(`${baseUrl}/job-postings`, {
+    const response = await fetch(`${baseUrl}/job-posting/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        title: calculatedTitle,
-        input_type: "url",
-        source_url: sourceUrl,
-        raw_content: `${calculatedTitle} 공고문 연동 결과: 우수한 MSA 백엔드 개발자를 모집합니다.`
+        url: sourceUrl
       }),
     });
 
@@ -96,13 +93,13 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
 }
 
 /**
- * 1.5. 채용공고 상세 조회 (GET /job-postings/{job_posting_id})
+ * 1.5. 채용공고 상세 조회 (GET /job-posting/{job_posting_id})
  */
 export async function getJobPosting(jobPostingId: number): Promise<JobPostingData> {
   const baseUrl = getApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/job-postings/${jobPostingId}`, {
+    const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -136,13 +133,13 @@ export async function getJobPosting(jobPostingId: number): Promise<JobPostingDat
 }
 
 /**
- * 2. 공고 구조화 실행 (POST /job-postings/{job_posting_id}/format)
+ * 2. 공고 구조화 실행 (POST /job-posting/{job_posting_id}/format)
  */
 export async function formatJobPosting(jobPostingId: number): Promise<FormattedPostingResponse> {
   const baseUrl = getApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/job-postings/${jobPostingId}/format`, {
+    const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}/format`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -165,7 +162,7 @@ export async function formatJobPosting(jobPostingId: number): Promise<FormattedP
 
   const mockResult: FormattedPostingResponse = {
     job_posting_id: jobPostingId,
-    formatted_postings: [
+    formatted_posting: [
       {
         category: "자격 요건",
         content: "백엔드 개발 경험 2년 이상",

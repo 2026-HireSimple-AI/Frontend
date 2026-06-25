@@ -49,54 +49,77 @@ export default function CriteriaDonutChart({
   // 검증 점수 백분율 총합
   const sumOfValues = data.reduce((acc, curr) => acc + curr.value, 0);
 
-  // SVG 도넛 그리기 파라미터 계산
-  let cumulativePercent = 0;
-
+  // SVG 도넛 그리기 파라미터 계산 (SVG 자체가 회전되지 않으므로, 12시 방향부터 그리기 위해 -0.25 차감)
   const getCoordinatesForPercent = (percent: number) => {
-    const x = Math.cos(2 * Math.PI * percent);
-    const y = Math.sin(2 * Math.PI * percent);
+    const angle = 2 * Math.PI * (percent - 0.25);
+    const x = Math.cos(angle);
+    const y = Math.sin(angle);
     return [x, y];
   };
+
+  let cumulativePercent = 0;
+  const scale = sumOfValues > 0 ? sumOfValues : 100;
 
   const slices = data.map((slice) => {
     if (slice.value <= 0) return null;
     
-    // 비율 계산 (예: 45 / 100 => 0.45)
-    // 합계가 100이 아닐 경우를 대비해 스케일링
-    const scale = sumOfValues > 0 ? sumOfValues : 100;
-    const percent = slice.value / scale;
+    // 비율 계산 (0 ~ 1 사이 값)
+    const rawPercent = slice.value / scale;
+    // 100% 전체를 차지할 때 시작점과 끝점이 겹쳐서 안 그려지는 문제를 막기 위해 미세 조절
+    const percent = Math.min(rawPercent, 0.9999);
     
-    const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
+    const startPercent = cumulativePercent;
+    const [startX, startY] = getCoordinatesForPercent(startPercent);
+    
     cumulativePercent += percent;
-    const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+    const endPercent = cumulativePercent;
+    const [endX, endY] = getCoordinatesForPercent(endPercent);
     
     const largeArcFlag = percent > 0.5 ? 1 : 0;
     
-    // 반지름 40, 중심(0,0)
+    // 반지름 50, 중심(0,0)
     const pathData = [
-      `M ${startX * 40} ${startY * 40}`,
-      `A 40 40 0 ${largeArcFlag} 1 ${endX * 40} ${endY * 40}`
+      `M ${startX * 50} ${startY * 50}`,
+      `A 50 50 0 ${largeArcFlag} 1 ${endX * 50} ${endY * 50}`
     ].join(" ");
+
+    // 라벨이 배치될 최적의 중간 각도 구하기
+    const midPercent = startPercent + (rawPercent / 2);
+    const midAngle = 2 * Math.PI * (midPercent - 0.25);
+    
+    // 도넛 반지름이 50이고 두께가 18이므로 외곽선은 약 59. 
+    // 라벨 텍스트는 76 반지름 지점에 배치하여 겹침 방지 및 여유 공간 확보.
+    const labelRadius = 74;
+    const tx = Math.cos(midAngle) * labelRadius;
+    const ty = Math.sin(midAngle) * labelRadius;
+
+    // 배치 방향에 따른 정렬 기준 선택
+    let textAnchor: "start" | "middle" | "end" | "inherit" = "middle";
+    if (tx > 6) textAnchor = "start";
+    else if (tx < -6) textAnchor = "end";
 
     return {
       pathData,
       color: slice.color,
       name: slice.name,
-      value: slice.value
+      value: slice.value,
+      tx,
+      ty,
+      textAnchor
     };
   }).filter(Boolean);
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-around gap-6 select-none font-sans w-full">
+    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm flex items-center justify-center select-none font-sans w-full min-h-[300px]">
       
-      {/* 1. SVG Donut 원 파트 */}
-      <div className="relative w-44 h-44 flex items-center justify-center flex-shrink-0">
+      {/* SVG Donut 원 및 라벨 파트 */}
+      <div className="relative w-72 h-72 flex items-center justify-center flex-shrink-0">
         <svg 
-          viewBox="-50 -50 100 100" 
-          className="w-full h-full transform -rotate-90 select-none"
+          viewBox="-100 -100 200 200" 
+          className="w-full h-full select-none overflow-visible"
         >
           {/* 전체 원형 트랙 회색 가이드 백그라운드 */}
-          <circle cx="0" cy="0" r="40" fill="none" stroke="#F2F4F7" strokeWidth="12" />
+          <circle cx="0" cy="0" r="50" fill="none" stroke="#F2F4F7" strokeWidth="18" />
 
           {/* 도넛 조각들 */}
           {slices.map((slice, idx) => (
@@ -105,44 +128,53 @@ export default function CriteriaDonutChart({
               d={slice?.pathData}
               fill="none"
               stroke={slice?.color}
-              strokeWidth="12"
-              className="transition-all duration-300 stroke-linecap-round hover:opacity-90"
+              strokeWidth="18"
+              className="transition-all duration-300 stroke-linecap-round hover:opacity-95"
               style={{ strokeLinecap: "butt" }}
             />
           ))}
+
+          {/* 조각별 라벨 (이름 및 가중치 백분율) */}
+          {slices.map((slice, idx) => {
+            if (!slice) return null;
+            return (
+              <g key={`label-${idx}`} className="transition-all duration-300">
+                <text
+                  x={slice.tx}
+                  y={slice.ty}
+                  textAnchor={slice.textAnchor}
+                  dominantBaseline="middle"
+                  className="select-none font-sans"
+                >
+                  <tspan 
+                    x={slice.tx} 
+                    dy="-3" 
+                    className="text-[9.5px] font-bold fill-[#1C1F26]"
+                  >
+                    {slice.name}
+                  </tspan>
+                  <tspan 
+                    x={slice.tx} 
+                    dy="11" 
+                    className="text-[9.5px] font-semibold fill-[#707887] font-mono"
+                  >
+                    {slice.value}%
+                  </tspan>
+                </text>
+              </g>
+            );
+          })}
         </svg>
 
         {/* 도넛 중앙의 총합 라벨 텍스트 */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
-          <span className="text-[11px] font-semibold text-[#707887] uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-[#707887] tracking-wider">
             총합 비율
           </span>
           <span className="text-sm font-extrabold text-[#1C1F26] mt-0.5 font-mono">
-            총 {sumOfValues}%
+            {sumOfValues}%
           </span>
         </div>
-      </div>
-
-      {/* 2. 우측 컬러 인덱스 목록 */}
-      <div className="flex flex-col gap-3 min-w-[160px]">
-        {data.map((slice, idx) => (
-          <div key={idx} className="flex items-center justify-between gap-6 hover:bg-gray-50 p-1.5 rounded-lg transition-colors">
-            <div className="flex items-center gap-2">
-              {/* 컬러 패치 */}
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0" 
-                style={{ backgroundColor: slice.color }}
-              />
-              <span className="text-xs font-bold text-[#1C1F26]">
-                {slice.name}
-              </span>
-            </div>
-            
-            <span className="text-xs font-bold text-[#00194B] font-mono" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {slice.value}%
-            </span>
-          </div>
-        ))}
       </div>
 
     </div>
