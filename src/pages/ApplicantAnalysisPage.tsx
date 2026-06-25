@@ -11,13 +11,13 @@ import GenerateInterviewButton from "../components/applicant/GenerateInterviewBu
 import InterviewCountModal from "../components/applicant/InterviewCountModal";
 
 // API 메소드 로드
-import { 
-  getApplicants, 
-  getApplicantDetail, 
-  ApplicantSummary, 
-  ApplicantDetail 
+import {
+  getApplicants,
+  getApplicantDetail,
+  ApplicantSummary,
+  ApplicantDetail
 } from "../api/applicantApi";
-import { generateApplicantInterviewQuestions } from "../api/interviewQuestionApi";
+import { getInterviewQuestions, generateApplicantInterviewQuestions } from "../api/interviewQuestionApi";
 
 // @ts-ignore
 import styles from "../styles/ApplicantAnalysisPage.module.css";
@@ -39,6 +39,7 @@ export default function ApplicantAnalysisPage() {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [rankingLimit, setRankingLimit] = useState<number>(() => {
     const saved = localStorage.getItem("selected_ranking_limit");
@@ -93,16 +94,42 @@ export default function ApplicantAnalysisPage() {
     }
   };
 
-  // 면접 질문지 일괄 생성 API 통화 및 완성 후 Step 4로 네비게이션 처리
   const handleOpenCountModal = async () => {
     setIsCountModalOpen(true);
   };
 
   const handleConfirmCountSelection = async (selectedApplicantIds: number[]) => {
-    if (selectedApplicantIds.length > 0) {
-      const primaryId = selectedApplicantIds[0];
-      navigate(`/analysis/${jobPostingId}/interview-questions?applicantId=${primaryId}&candidateIds=${selectedApplicantIds.join(",")}`);
+    if (selectedApplicantIds.length === 0) return;
+
+    const primaryId = selectedApplicantIds[0];
+    setIsCountModalOpen(false);
+    setIsGenerating(true);
+
+    console.log("[DEBUG] 면접 질문 생성 요청 - applicantId:", primaryId, "jobPostingId:", jobPostingId);
+
+    try {
+      const result = await generateApplicantInterviewQuestions(primaryId, {
+        question_count: 5,
+        question_types: ["행동", "역량", "우려검증", "기술검증", "기타"]
+      });
+      console.log("[DEBUG] 생성 결과:", result);
+      if (!result.success) {
+        alert(`질문 생성 실패: ${result.message}`);
+        setIsGenerating(false);
+        return;
+      }
+    } catch (e) {
+      console.error("[DEBUG] 생성 오류:", e);
+      alert("질문 생성 중 오류가 발생했습니다.");
+      setIsGenerating(false);
+      return;
+    } finally {
+      setIsGenerating(false);
     }
+
+    navigate(
+      `/analysis/${jobPostingId}/interview-questions?applicantId=${primaryId}&candidateIds=${selectedApplicantIds.join(",")}`
+    );
   };
 
   return (
@@ -112,6 +139,13 @@ export default function ApplicantAnalysisPage() {
       user={user}
       currentStep={2} // 채용평가단계 지원자적합도 2단계
     >
+      {isGenerating && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex flex-col items-center justify-center gap-4">
+          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          <p className="text-white font-bold text-sm">RAG 검수 후 면접 질문 생성 중...</p>
+          <p className="text-white/60 text-xs">GPT-4o-mini가 법령을 검토하고 있습니다. 잠시만 기다려주세요.</p>
+        </div>
+      )}
       <div className={styles.page} id="applicant-analysis-lifecycle-page">
         {/* 페이지 타이틀 정보 영역 */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-[#E6EAF0] pb-5">
