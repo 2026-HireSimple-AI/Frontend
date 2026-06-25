@@ -12,7 +12,7 @@ export default function ResumeSummaryToggle({ summary }: ResumeSummaryToggleProp
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="flex flex-col gap-3 w-full" id="resume-summary-toggle-container">
+    <div className="flex flex-col gap-3 w-full" id="resume-summary-toggle-container" style={{ position: "relative" }}>
       <div className="flex justify-end">
         <button
           type="button"
@@ -26,27 +26,35 @@ export default function ResumeSummaryToggle({ summary }: ResumeSummaryToggleProp
       </div>
 
       {isExpanded && (
-        <div className={styles.resumeSummaryPanel} id="resume-summary-panel">
+        <div className={styles.resumeSummaryPanel} id="resume-summary-panel" style={{
+                position: "absolute",
+                top: "2.5rem",
+                right: 0,
+                zIndex: 50,
+                width: "320px",
+                backgroundColor: "#F8FAFC",
+              }}>
+
           <div>
             <span className={styles.summarySectionTitle}>
               <Briefcase size={12} className="text-[#6D5DFC]" />
               경력 요약
             </span>
-            <p className={styles.summaryText}>{summary.career_summary}</p>
+            <p className={styles.summaryText}dangerouslySetInnerHTML={{__html: summary.career_summary.replace(/\n/g, '<br/>')}}></p>
           </div>
           <div style={{ borderTop: "1px solid #E6EAF0", paddingTop: "0.5rem" }}>
             <span className={styles.summarySectionTitle}>
               <FileText size={12} className="text-[#6D5DFC]" />
               주요 프로젝트 경험
             </span>
-            <p className={styles.summaryText}>{summary.project_summary}</p>
+            <p className={styles.summaryText}dangerouslySetInnerHTML={{__html: summary.project_summary.replace(/\n/g, '<br/>')}}></p>
           </div>
           <div style={{ borderTop: "1px solid #E6EAF0", paddingTop: "0.5rem" }}>
             <span className={styles.summarySectionTitle}>
               <FileCode size={12} className="text-[#6D5DFC]" />
               핵심 보유기술
             </span>
-            <p className={styles.summaryText}>{summary.skill_summary}</p>
+            <p className={styles.summaryText}dangerouslySetInnerHTML={{__html: summary.skill_summary.replace(/\n/g, '<br/>')}}></p>
           </div>
         </div>
       )}

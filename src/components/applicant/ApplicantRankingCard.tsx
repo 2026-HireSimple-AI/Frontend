@@ -44,24 +44,30 @@ export default function ApplicantRankingCard({
           <span className={styles.rankingTitle}>지원자 랭킹</span>
           <span className="text-[10px] font-bold text-white bg-[#6D5DFC] px-1.5 py-0.5 rounded-md leading-none">AI</span>
         </div>
-        <select 
-          id="ranking-limit-select"
-          className={styles.rankingCountSelect}
-          value={limit}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            localStorage.setItem("selected_ranking_limit", String(val));
-            if (onLimitChange) {
-              onLimitChange(val);
-            } else {
-              setLocalLimit(val);
-            }
-            setPage(0); // 정렬 범위 변경 시 항상 1페이지로 복구
-          }}
-        >
-          <option value={5}>5명 보기</option>
-          <option value={20}>20명 보기</option>
-        </select>
+          <select
+            id="ranking-limit-select"
+            className={styles.rankingCountSelect}
+            value={limit}
+            disabled={applicants.length <= 5}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              localStorage.setItem("selected_ranking_limit", String(val));
+              if (onLimitChange) {
+                onLimitChange(val);
+              } else {
+                setLocalLimit(val);
+              }
+              setPage(0);
+            }}
+          >
+            <option value={5}>5명 보기</option>
+            {applicants.length > 5 && applicants.length <= 20 && (
+              <option value={applicants.length}>{applicants.length}명 보기</option>
+            )}
+            {applicants.length > 20 && (
+              <option value={20}>20명 보기</option>
+            )}
+          </select>
       </div>
       <p className={styles.rankingDesc}>
         종합 적합도 분석이 완료된 지원자 목록입니다.
