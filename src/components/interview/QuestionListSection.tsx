@@ -33,13 +33,11 @@ export default function QuestionListSection({
     };
 
     questions.forEach((q) => {
-      const type = q.question_type;
-      
-      // Standardize mapping to avoid mismatch based on spelling "기술검증" vs "기술검정"
+      const type = (q.question_type || "").replace(/\s/g, "");
+
       let normalizedType = type;
-      if (type.includes("기술")) {
-        normalizedType = "기술검정";
-      }
+      if (type.includes("기술")) normalizedType = "기술검정";
+      else if (type.includes("우려")) normalizedType = "우려검증";
 
       if (normalizedType in rawCounts) {
         rawCounts[normalizedType] += 1;
@@ -56,13 +54,11 @@ export default function QuestionListSection({
   // Filter questions for display
   const filteredQuestions = questions.filter((q) => {
     if (activeQuestionType === "전체") return true;
-    
-    const normalizedType = q.question_type;
-    if (normalizedType === activeQuestionType) return true;
-    if (activeQuestionType === "기술검정" && normalizedType.includes("기술")) return true;
-    if (activeQuestionType === "우려검증" && normalizedType.includes("우려")) return true;
-    
-    return false;
+
+    const type = (q.question_type || "").replace(/\s/g, "");
+    if (activeQuestionType === "기술검정") return type.includes("기술");
+    if (activeQuestionType === "우려검증") return type.includes("우려");
+    return type === activeQuestionType;
   });
 
   const isEmpty = questions.length === 0;

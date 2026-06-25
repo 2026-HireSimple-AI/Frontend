@@ -182,7 +182,6 @@ export async function getInterviewQuestions(applicantId: number): Promise<Interv
     if (response.ok) {
       const json = await response.json();
       if (json.success && json.data) {
-        saveToLocalStorage(`questions_${applicantId}`, json.data);
         return json.data;
       }
     }
@@ -190,16 +189,8 @@ export async function getInterviewQuestions(applicantId: number): Promise<Interv
     console.warn("getInterviewQuestions API 통신 실패, Mock 활성화.");
   }
 
-  // Local storage check
-  const localVal = getFromLocalStorage(`questions_${applicantId}`);
-  if (localVal) {
-    return localVal;
-  }
-
-  // Default fallback questions mapping
-  const results = applicantId === 1 ? [...defaultMockQuestions] : generateMockQuestionsFor(applicantId);
-  saveToLocalStorage(`questions_${applicantId}`, results);
-  return results;
+  // 백엔드 연결 실패 시 빈 배열 반환 (Mock 제거)
+  return [];
 }
 
 /**
@@ -217,44 +208,24 @@ export async function generateApplicantInterviewQuestions(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(params || { question_count: 5, question_types: ["기술 검증", "우려 검증"] })
+      body: JSON.stringify(params || { question_count: 9, question_types: ["행동", "역량", "우려검증", "기술검증", "기타"] })
     });
 
     if (response.ok) {
       const json = await response.json();
       if (json.success) {
-        // Trigger local regeneration logic in the UI
-        return { success: true, message: "성공", applicant_id: applicantId };
+        return { success: true, message: json.message || "생성 완료", applicant_id: applicantId };
+      } else {
+        return { success: false, message: json.detail || "생성 실패", applicant_id: applicantId };
       }
+    } else {
+      const errJson = await response.json().catch(() => ({}));
+      return { success: false, message: errJson.detail || `서버 오류 (${response.status})`, applicant_id: applicantId };
     }
-  } catch (err) {
-    console.warn("generateApplicantInterviewQuestions API 통신 실패, 자동 성공 연출합니다.");
+  } catch (err: any) {
+    console.error("generateApplicantInterviewQuestions API 통신 실패:", err);
+    return { success: false, message: "서버 연결 실패", applicant_id: applicantId };
   }
-
-  // Mock delay
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // Dynamic creation based on counts and selectedTypes:
-  const targetCount = params?.question_count || 9;
-  const targetTypes = params?.question_types || ["행동", "역량", "우려검증", "기술검증", "기타"];
-
-  const candidatePool = applicantId === 1 ? [...defaultMockQuestions] : generateMockQuestionsFor(applicantId);
-  
-  // Filter by types if specified
-  let matched = candidatePool.filter(q => targetTypes.includes(q.question_type));
-  if (matched.length === 0) {
-    matched = candidatePool;
-  }
-
-  // Adjust size to targetCount (repeating or slicing)
-  let finalQuestions: InterviewQuestion[] = [];
-  while (finalQuestions.length < targetCount && matched.length > 0) {
-    finalQuestions.push(...matched.map(q => ({...q, id: q.id + finalQuestions.length * 99})));
-  }
-  finalQuestions = finalQuestions.slice(0, targetCount).map((q, idx) => ({ ...q, id: applicantId * 10000 + idx }));
-
-  saveToLocalStorage(`questions_${applicantId}`, finalQuestions);
-  return { success: true, message: "Mock 면접 질문 생성 완료", applicant_id: applicantId };
 }
 
 /**

@@ -99,22 +99,23 @@ export default function InterviewQuestionPage() {
       try {
         const fetched = await getApplicants(parsedJobId);
         if (!active) return;
-        setApplicants(fetched);
 
-        // Standard selection fallback
-        if (fetched.length > 0) {
-          const urlSelectedId = searchParams.get("applicantId");
-          const candidateIdsParam = searchParams.get("candidateIds");
+        // candidateIds 파라미터가 있으면 해당 지원자만 표시
+        const candidateIdsParam = searchParams.get("candidateIds");
+        if (candidateIdsParam) {
+          const candidateIds = candidateIdsParam.split(",").map(Number).filter(Boolean);
+          const filtered = fetched.filter(a => candidateIds.includes(a.id));
+          setApplicants(filtered.length > 0 ? filtered : fetched);
+        } else {
+          setApplicants(fetched);
+        }
 
-          let startId = fetched[0].id; // Default: APPLICANT_001 usually is ID 1
-
-          if (urlSelectedId) {
-            const reqId = Number(urlSelectedId);
-            if (fetched.some(app => app.id === reqId)) {
-              startId = reqId;
-            }
-          }
-          setSelectedApplicantId(startId);
+        // URL의 applicantId를 최우선 사용
+        const urlSelectedId = searchParams.get("applicantId");
+        if (urlSelectedId) {
+          setSelectedApplicantId(Number(urlSelectedId));
+        } else if (fetched.length > 0) {
+          setSelectedApplicantId(fetched[0].id);
         }
       } catch (err) {
         console.error("이력서 정보 로드 에러:", err);
@@ -141,26 +142,41 @@ export default function InterviewQuestionPage() {
 
     async function loadApplicantDetailData() {
       try {
+        console.log("[DEBUG] InterviewPage - 질문 조회 applicantId:", selectedApplicantId);
         const [detail, fetchedQuestions] = await Promise.all([
           getApplicantDetail(applicantId),
           getInterviewQuestions(applicantId)
         ]);
+        console.log("[DEBUG] InterviewPage - 조회된 질문 수:", fetchedQuestions.length);
 
         if (!active) return;
 
         setSelectedApplicant(detail);
 
-        // Filter question type checkbox matching current questions pool
         if (fetchedQuestions.length > 0) {
-          const loadedTypes = Array.from(new Set(fetchedQuestions.map(q => {
-            // map 기술검증 -> 기술검정
-            return q.question_type === "기술검증" ? "기술검정" : q.question_type;
-          })));
+          const loadedTypes = Array.from(new Set(fetchedQuestions.map(q =>
+            q.question_type === "기술검증" ? "기술검정" : q.question_type
+          )));
           setSelectedQuestionTypes(loadedTypes);
           setQuestionCount(fetchedQuestions.length);
+          setQuestions(fetchedQuestions);
+        } else {
+          // 질문이 없으면 자동 생성
+          setIsGenerating(true);
+          try {
+            const genResult = await generateApplicantInterviewQuestions(selectedApplicantId, {
+              question_count: 5,
+              question_types: ["행동", "역량", "우려검증", "기술검증", "기타"]
+            });
+            console.log("[DEBUG] 자동 생성 결과:", genResult);
+            if (genResult.success) {
+              const generated = await getInterviewQuestions(selectedApplicantId);
+              if (active) setQuestions(generated);
+            }
+          } finally {
+            if (active) setIsGenerating(false);
+          }
         }
-
-        setQuestions(fetchedQuestions);
       } catch (e) {
         console.error("지원자 세부정보 획득 오류:", e);
       }

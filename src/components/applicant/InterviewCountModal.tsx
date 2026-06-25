@@ -40,14 +40,9 @@ export default function InterviewCountModal({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Auto calculate maxCount as specified:
-  // - If applicants.length >= 3, maxCount = 3
-  // - If applicants.length < 3, maxCount = applicants.length
-  // Lift this boundary if the default limit is 5 or 20
-  const baseMax = applicants.length >= 3 ? 3 : applicants.length;
-  const computedMaxCount = propMaxCount !== undefined 
-    ? propMaxCount 
-    : (applicants.length > 0 ? Math.min(Math.max(resolvedDefault, baseMax), applicants.length) : Math.max(resolvedDefault, baseMax));
+  const computedMaxCount = propMaxCount !== undefined
+    ? propMaxCount
+    : applicants.length;
 
   // Set default count to minCount if necessary when modal is opened or applicants count changes
   useEffect(() => {
