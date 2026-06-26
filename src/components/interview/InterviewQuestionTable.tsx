@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, CheckCircle, Edit2 } from "lucide-react";
+import { Star, CheckCircle } from "lucide-react";
 import { InterviewQuestion } from "../../api/interviewQuestionApi";
 
 interface InterviewQuestionTableProps {
@@ -59,13 +59,12 @@ export default function InterviewQuestionTable({
             <th className="py-3 px-4 text-xs font-semibold text-slate-500 text-center w-24">유형</th>
             <th className="py-3 px-4 text-xs font-semibold text-slate-500 text-center w-24">중요도</th>
             <th className="py-3 px-4 text-xs font-semibold text-slate-500 text-center w-28">검수 결과</th>
-            <th className="py-3 px-4 text-xs font-semibold text-slate-500 text-center w-24">관리</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {questions.length === 0 ? (
             <tr>
-              <td colSpan={6} className="py-12 text-sm text-slate-400 text-center bg-white font-medium">
+              <td colSpan={5} className="py-12 text-sm text-slate-400 text-center bg-white font-medium">
                 아직 생성된 면접 질문이 없습니다.
               </td>
             </tr>
@@ -113,18 +112,6 @@ export default function InterviewQuestionTable({
                   </div>
                 </td>
 
-                {/* 6. 관리 (수정 버튼) */}
-                <td className="py-4 px-4 text-center whitespace-nowrap" id={`cell-action-${q.id}`}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenEditModal(q)}
-                    className="h-8 px-3 rounded-lg border border-[#D4D9E1] text-[#1C1F26] bg-white text-xs font-semibold hover:bg-[#F6F8FC] cursor-pointer transition-all active:scale-95 shadow-2xs inline-flex items-center gap-1 justify-center mx-auto"
-                    title="질문 수정하기"
-                  >
-                    <Edit2 size={12} className="text-[#707887]" />
-                    <span>수정</span>
-                  </button>
-                </td>
               </tr>
             ))
           )}

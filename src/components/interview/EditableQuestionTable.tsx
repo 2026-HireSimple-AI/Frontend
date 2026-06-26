@@ -9,7 +9,7 @@ interface EditableQuestionTableProps {
   onChangeQuestionText: (id: number, text: string) => void;
   onImportanceChange?: (id: number, val: number) => void;
   onTypeChange?: (id: number, type: string) => void;
-  onDeleteQuestion: (id: number) => void;
+  onDeleteQuestion: (id: number) => void | Promise<void>;
   onReplaceWithRecommended: (id: number) => void;
 }
 

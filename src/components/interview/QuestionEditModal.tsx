@@ -1,9 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { X, Plus, Edit3, Trash2, ArrowRight, CheckCircle, ShieldAlert, AlertTriangle } from "lucide-react";
-import { InterviewQuestion } from "../../api/interviewQuestionApi";
+import { InterviewQuestion, deleteInterviewQuestion } from "../../api/interviewQuestionApi";
 import QuestionTypeTabs from "./QuestionTypeTabs";
 import EditableQuestionTable from "./EditableQuestionTable";
 import QuestionEditModalFooter from "./QuestionEditModalFooter";
+
+// 컴포넌트 밖에 정의해야 useEffect에서 참조 가능
+function runLocalComplianceCheck(text: string) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes("마감 기한") || lower.includes("우선순위") || lower.includes("우선 순위") || lower.includes("마감기한")) {
+    return {
+      status: "미준수" as const,
+      revised: "업무상 여러 마감 시한이 겹쳐 충돌이 발생한 시점에, 업무의 우선순위를 어떻게 수치적 또는 이성적으로 판단하여 추진하셨는지 구체적 사례를 들어주세요.",
+      reason: "직원의 개인적인 성향, 습관적 행동, 단순 여가 시간 관리 등을 추측할 수 있는 서술형 질문에 그칠 우려가 있으므로, 업무 역량 및 객관적 리소싱 관점 위주로 다듬어야 직무 연관성을 높이고 왜곡된 선입견을 최소화할 수 있습니다."
+    };
+  }
+
+  if (
+    lower.includes("결혼") ||
+    lower.includes("출산") ||
+    lower.includes("나이") ||
+    lower.includes("가족") ||
+    lower.includes("애인") ||
+    lower.includes("남자친구") ||
+    lower.includes("여자친구") ||
+    lower.includes("부모님") ||
+    lower.includes("종교") ||
+    lower.includes("고향")
+  ) {
+    return {
+      status: "미준수" as const,
+      revised: "우리 직무 수행 시 협력적인 동료들과 함께 원활하게 소통하고 다른 의견들을 수렴하며 시너지를 제고해 온 본인만의 커뮤니케이션 노하우가 있다면 설명해주세요.",
+      reason: "개인 신상정보(나이, 가족관계, 성별, 혼인 여부) 및 직무와 무관한 사적 기호는 채용절차법 상 수집이 엄격히 금지된 항목으로, 자칫 면접관의 주관적이고 차별적인 왜곡이 발생하지 않도록 근본적으로 예방해야 합니다."
+    };
+  }
+
+  return { status: "준수" as const, revised: null, reason: null };
+}
 
 interface QuestionEditModalProps {
   isOpen: boolean;
@@ -28,12 +62,21 @@ export default function QuestionEditModal({
   // 2. Load questions into draft on modal open
   useEffect(() => {
     if (isOpen) {
-      // Create deep editable copy of original questions to prevent mutations
-      const cloned = questions.map(q => ({
-        ...q,
-        // Normalize "기술검정" to "기술검증" to avoid UI tab mismatches
-        question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type
-      }));
+      // 모달 열릴 때 법령 위반 질문에 권장 수정안 자동 생성
+      const cloned = questions.map(q => {
+        const normalized = { ...q, question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type };
+        const check = runLocalComplianceCheck(q.question_text);
+        if (check.status === "준수") {
+          // 현재 텍스트가 법령 통과 → DB 상태 무시하고 준수로 표시
+          return { ...normalized, compliance_status: "준수" as any, revised_question_text: null };
+        }
+        // 위반 질문 → 권장 수정안 채우기
+        return {
+          ...normalized,
+          revised_question_text: q.revised_question_text || check.revised,
+          compliance_reason: (q as any).compliance_reason || check.reason
+        } as any;
+      });
       setDraftQuestions(cloned);
       setActiveEditingId(null);
       setActiveType("전체");
@@ -63,45 +106,6 @@ export default function QuestionEditModal({
     if (activeType === "기술검증") return q.question_type === "기술검증" || q.question_type === "기술검정";
     return q.question_type === activeType;
   });
-
-  // 4. Trigger simulated or manual RAG Compliance check on blur or edit
-  const runLocalComplianceCheck = (text: string) => {
-    const lower = text.toLowerCase();
-    
-    // Check keywords to simulate deep legal violation detection
-    if (lower.includes("마감 기한") || lower.includes("우선순위") || lower.includes("우선 순위") || lower.includes("마감기한")) {
-      return {
-        status: "미준수" as const,
-        revised: "업무상 여러 마감 시한이 겹쳐 충돌이 발생한 시점에, 업무의 우선순위를 어떻게 수치적 또는 이성적으로 판단하여 추진하셨는지 구체적 사례를 들어주세요.",
-        reason: "직원의 개인적인 성향, 습관적 행동, 단순 여가 시간 관리 등을 추측할 수 있는 서술형 질문에 그칠 우려가 있으므로, 업무 역량 및 객관적 리소싱 관점 위주로 다듬어야 직무 연관성을 높이고 왜곡된 선입견을 최소화할 수 있습니다."
-      };
-    }
-
-    if (
-      lower.includes("결혼") || 
-      lower.includes("출산") || 
-      lower.includes("나이") || 
-      lower.includes("가족") || 
-      lower.includes("애인") || 
-      lower.includes("남자친구") || 
-      lower.includes("여자친구") ||
-      lower.includes("부모님") ||
-      lower.includes("종교") ||
-      lower.includes("고향")
-    ) {
-      return {
-        status: "미준수" as const,
-        revised: "우리 직무 수행 시 협력적인 동료들과 함께 원활하게 소통하고 다른 의견들을 수렵하며 시너지를 제고해 온 본인만의 커뮤니케이션 노하우가 있다면 설명해주세요.",
-        reason: "개인 신상정보(나이, 가족관계, 성별, 혼인 여부) 및 직무와 무관한 사적 기호는 채용절차법 상 수집이 엄격히 금지된 항목으로, 자칫 면접관의 주관적이고 차별적인 왜곡이 발생하지 않도록 근본적으로 예방해야 합니다."
-      };
-    }
-
-    return {
-      status: "준수" as const,
-      revised: null,
-      reason: null
-    };
-  };
 
   // 5. Change Handlers
   const handleChangeQuestionText = (id: number, newText: string) => {
@@ -157,8 +161,11 @@ export default function QuestionEditModal({
     setActiveEditingId(tempId);
   };
 
-  // 7. Delete question row
-  const handleDeleteQuestion = (id: number) => {
+  // 7. Delete question row (DB + 화면)
+  const handleDeleteQuestion = async (id: number) => {
+    if (id > 0) {
+      await deleteInterviewQuestion(id);
+    }
     setDraftQuestions(prev => prev.filter(q => q.id !== id));
   };
 

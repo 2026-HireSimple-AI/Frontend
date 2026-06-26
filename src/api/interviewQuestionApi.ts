@@ -36,6 +36,7 @@ export interface InterviewQuestion {
   compliance_status: "준수" | "경고";
   created_by: "AI" | "USER";
   revised_question_text?: string | null;
+  created_at?: string | null;
 }
 
 export interface InterviewQuestionResponse {
@@ -275,7 +276,54 @@ export async function updateInterviewQuestion(
 }
 
 /**
- * 7. 특정 질문 법령 준수 검수 요청 (POST /interview-questions/{question_id}/compliance-check)
+ * 7. 질문 삭제 (DELETE /interview-questions/{question_id})
+ */
+export async function deleteInterviewQuestion(questionId: number): Promise<{ success: boolean }> {
+  const baseUrl = getApiBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/interview-questions/${questionId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (response.ok) return { success: true };
+  } catch (err) {
+    console.warn("deleteInterviewQuestion API 통신 실패");
+  }
+
+  return { success: false };
+}
+
+/**
+ * 8. 단일 질문 직접 추가 (POST /applicants/{applicant_id}/interview-questions/add)
+ */
+export async function addInterviewQuestion(
+  applicantId: number,
+  question: Pick<InterviewQuestion, "question_type" | "question_text" | "compliance_status" | "created_by">
+): Promise<{ success: boolean; data?: InterviewQuestion }> {
+  const baseUrl = getApiBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/applicants/${applicantId}/interview-questions/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(question)
+    });
+
+    if (response.ok) {
+      const json = await response.json();
+      return { success: true, data: json.data };
+    }
+  } catch (err) {
+    console.warn("addInterviewQuestion API 통신 실패");
+  }
+
+  return { success: false };
+}
+
+/**
+ * 8. 특정 질문 법령 준수 검수 요청 (POST /interview-questions/{question_id}/compliance-check)
  */
 export async function checkQuestionCompliance(
   questionId: number
