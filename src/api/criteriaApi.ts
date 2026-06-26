@@ -35,13 +35,13 @@ export interface CriteriaResponse {
 }
 
 /**
- * 3. 평가 기준 생성 (POST /job-postings/{job_posting_id}/criteria)
+ * 3. 평가 기준 생성 (POST /job-posting/{job_posting_id}/criteria)
  */
 export async function createEvaluationCriteria(jobPostingId: number): Promise<CriteriaResponse> {
   const baseUrl = getApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/job-postings/${jobPostingId}/criteria`, {
+    const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}/criteria`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

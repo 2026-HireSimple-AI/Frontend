@@ -36,7 +36,6 @@ export interface JobPostingData {
 export interface FormattedPostingItem {
   category: string;
   content: string;
-  is_required: boolean;
 }
 
 export interface FormattedPostingResponse {
@@ -166,22 +165,18 @@ export async function formatJobPosting(jobPostingId: number): Promise<FormattedP
       {
         category: "자격 요건",
         content: "백엔드 개발 경험 2년 이상",
-        is_required: true
       },
       {
         category: "기술 스택",
         content: "Java, Spring Boot, MySQL",
-        is_required: true
       },
       {
         category: "주요 업무",
         content: "REST API 개발 및 운영",
-        is_required: false
       },
       {
         category: "우대 사항",
         content: "AWS 배포 경험 및 클라우드 아키텍처 이해",
-        is_required: false
       }
     ],
     skills_stack: [
