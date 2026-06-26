@@ -6,8 +6,6 @@ import AnalysisMetaCard from "../components/interview/AnalysisMetaCard";
 import ApplicantSelectCard from "../components/interview/ApplicantSelectCard";
 import InterviewSettingCard from "../components/interview/InterviewSettingCard";
 import QuestionListSection from "../components/interview/QuestionListSection";
-import ResumeSummaryToggleCard from "../components/interview/ResumeSummaryToggleCard";
-import ComplianceSummaryCard from "../components/interview/ComplianceSummaryCard";
 import QuestionEditModal from "../components/interview/QuestionEditModal";
 import BottomNotice from "../components/interview/BottomNotice";
 
@@ -17,11 +15,12 @@ import {
   getApplicantDetail, 
   ApplicantDetail 
 } from "../api/applicantApi";
-import { 
-  getInterviewQuestions, 
-  generateApplicantInterviewQuestions, 
-  updateInterviewQuestion, 
-  InterviewQuestion 
+import {
+  getInterviewQuestions,
+  generateApplicantInterviewQuestions,
+  updateInterviewQuestion,
+  addInterviewQuestion,
+  InterviewQuestion
 } from "../api/interviewQuestionApi";
 
 export default function InterviewQuestionPage() {
@@ -34,19 +33,19 @@ export default function InterviewQuestionPage() {
   // 1. Core visual state
   const [jobPostingTitle, setJobPostingTitle] = useState("백엔드 개발자 (경력 3년 이상)");
   const [criteriaVersion, setCriteriaVersion] = useState("ver. 1.0 (2024.05.20)");
-  const [generatedAt, setGeneratedAt] = useState("2024.05.20 15:24");
+  const [generatedAt, setGeneratedAt] = useState("");
 
   // 2. Component State Declarations
   const [applicants, setApplicants] = useState<any[]>([]);
   const [selectedApplicantId, setSelectedApplicantId] = useState<number | null>(null);
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantDetail | null>(null);
   
-  // Requirement state: defaults to false as strictly requested: "isResumeSummaryOpen must default to false."
+
   const [isResumeSummaryOpen, setIsResumeSummaryOpen] = useState(false);
 
   // Settings state
   const [interviewTime, setInterviewTime] = useState("45분");
-  const [questionCount, setQuestionCount] = useState(9);
+  const [questionCount, setQuestionCount] = useState(5);
   const [selectedQuestionTypes, setSelectedQuestionTypes] = useState<string[]>([
     "행동", "역량", "우려검증", "기술검정", "기타"
   ]);
@@ -154,12 +153,13 @@ export default function InterviewQuestionPage() {
         setSelectedApplicant(detail);
 
         if (fetchedQuestions.length > 0) {
-          const loadedTypes = Array.from(new Set(fetchedQuestions.map(q =>
-            q.question_type === "기술검증" ? "기술검정" : q.question_type
-          )));
-          setSelectedQuestionTypes(loadedTypes);
-          setQuestionCount(fetchedQuestions.length);
           setQuestions(fetchedQuestions);
+          // DB에서 불러온 질문의 생성 시각 표시
+          const latestCreatedAt = fetchedQuestions[fetchedQuestions.length - 1]?.created_at;
+          if (latestCreatedAt) {
+            const d = new Date(latestCreatedAt);
+            setGeneratedAt(`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`);
+          }
         } else {
           // 질문이 없으면 자동 생성
           setIsGenerating(true);
@@ -171,7 +171,10 @@ export default function InterviewQuestionPage() {
             console.log("[DEBUG] 자동 생성 결과:", genResult);
             if (genResult.success) {
               const generated = await getInterviewQuestions(selectedApplicantId);
-              if (active) setQuestions(generated);
+              if (active) {
+                setQuestions(generated);
+                setGeneratedAt(formatNow());
+              }
             }
           } finally {
             if (active) setIsGenerating(false);
@@ -191,8 +194,12 @@ export default function InterviewQuestionPage() {
   // Select Dropdown action
   const handleSelectApplicant = (id: number) => {
     setSelectedApplicantId(id);
-    setIsResumeSummaryOpen(false); // Default to false as strictly requested!
     setActiveQuestionType("전체"); // Reset filter
+  };
+
+  const formatNow = () => {
+    const now = new Date();
+    return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   };
 
   // Generate Questions Trigger
@@ -214,9 +221,7 @@ export default function InterviewQuestionPage() {
       if (response.success) {
         const refreshed = await getInterviewQuestions(selectedApplicantId);
         setQuestions(refreshed);
-        const now = new Date();
-        const formattedTime = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-        setGeneratedAt(formattedTime);
+        setGeneratedAt(formatNow());
       } else {
         setErrorMessage("질문 생성이 실패했습니다.");
       }
@@ -240,19 +245,35 @@ export default function InterviewQuestionPage() {
 
   const handleSaveQuestionListModal = async (updatedQuestions: InterviewQuestion[]) => {
     try {
-      // 1. Maintain local visual synchronization
-      setQuestions(updatedQuestions);
+      const savedQuestions: InterviewQuestion[] = [];
 
-      // 2. Persister locally
-      if (selectedApplicantId) {
-        localStorage.setItem(`questions_${selectedApplicantId}`, JSON.stringify(updatedQuestions));
-      }
-
-      // 3. Batch patches to actual endpoints for compliant sync
       for (const q of updatedQuestions) {
         if (q.id > 0) {
+          // 기존 질문 수정
           await updateInterviewQuestion(q.id, q.question_text);
+          savedQuestions.push(q);
+        } else if (selectedApplicantId) {
+          // 신규 질문 DB에 추가
+          const result = await addInterviewQuestion(selectedApplicantId, {
+            question_type: q.question_type,
+            question_text: q.question_text,
+            compliance_status: q.compliance_status || "준수",
+            created_by: "USER"
+          });
+          if (result.success && result.data) {
+            savedQuestions.push(result.data);
+          } else {
+            savedQuestions.push(q);
+          }
         }
+      }
+
+      // 저장 후 DB에서 최신 목록 다시 조회
+      if (selectedApplicantId) {
+        const refreshed = await getInterviewQuestions(selectedApplicantId);
+        setQuestions(refreshed.length > 0 ? refreshed : savedQuestions);
+      } else {
+        setQuestions(savedQuestions);
       }
     } catch (err: any) {
       console.error("면접 질문 세트 일괄 업데이트 중 에러:", err);
@@ -260,43 +281,57 @@ export default function InterviewQuestionPage() {
     }
   };
 
-  // Mock download action for hwp
-  const handleDownloadHwp = () => {
-    const toast = document.createElement("div");
-    toast.className = "fixed bottom-5 right-5 bg-stone-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl z-50 flex items-center gap-2 transform translate-y-0 opacity-100 transition-all";
-    toast.innerHTML = `📥 hwp 포맷으로 질문지가 출력 저장되었습니다.`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 2500);
-  };
-
-  // Final Action Click Handler - PDF Save & Exit
-  const handleSaveQuestionList = async () => {
+  // PDF 저장
+  const handleSaveQuestionList = () => {
     if (questions.length === 0) return;
 
-    setIsSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setIsGenerating(false);
-    setIsSaving(false);
+    // 인쇄용 스타일 추가
+    const style = document.createElement("style");
+    style.id = "pdf-print-style";
+    style.innerHTML = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #pdf-print-area, #pdf-print-area * { visibility: visible !important; }
+        #pdf-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; }
+      }
+    `;
+    document.head.appendChild(style);
 
-    // Save configuration states to local storage to simulate complete step lock
-    localStorage.setItem(`final_saved_questions_${parsedJobId}_${selectedApplicantId || 1}`, JSON.stringify(questions));
+    // 인쇄 영역 생성
+    const printArea = document.createElement("div");
+    printArea.id = "pdf-print-area";
+    printArea.style.fontFamily = "sans-serif";
+    printArea.innerHTML = `
+      <h2 style="font-size:18px;font-weight:bold;margin-bottom:4px;">면접 질문지</h2>
+      <p style="font-size:12px;color:#666;margin-bottom:20px;">${jobPostingTitle} · 생성일: ${generatedAt}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px;border:1px solid #e2e8f0;width:40px;">번호</th>
+            <th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">질문</th>
+            <th style="padding:8px;border:1px solid #e2e8f0;width:70px;">유형</th>
+            <th style="padding:8px;border:1px solid #e2e8f0;width:70px;">검수</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${questions.map((q, i) => `
+            <tr>
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${i + 1}</td>
+              <td style="padding:8px;border:1px solid #e2e8f0;">${q.question_text}</td>
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${q.question_type}</td>
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${q.compliance_status}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    document.body.appendChild(printArea);
 
-    const toast = document.createElement("div");
-    toast.className = "fixed bottom-16 right-5 bg-stone-900 text-white text-xs font-semibold px-4 py-1.5 rounded-xl shadow-xl z-50 flex items-center gap-2 transform translate-y-0 opacity-100 transition-all";
-    toast.innerHTML = `🏁 면접 질문지 PDF 및 최종 데이터 백업이 안전하게 전송되었습니다!`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 2500);
+    window.print();
 
-    // Direct transition back to dashboard
-    setTimeout(() => {
-      navigate("/analysis/manage");
-    }, 1200);
+    // 인쇄 후 정리
+    document.body.removeChild(printArea);
+    document.head.removeChild(style);
   };
 
   // Calculate stats
@@ -370,20 +405,93 @@ export default function InterviewQuestionPage() {
             />
           </div>
 
-          {/* Column C: Resume Summary & Compliances summary (3/12 of width) */}
-          <div className="lg:col-span-3 flex flex-col gap-4" id="panel-compliance-right">
-            {/* Resume Summary Card (strictly default closed state) */}
-            <ResumeSummaryToggleCard
-              selectedApplicant={selectedApplicant}
-              resumeSummary={selectedApplicant?.resume_summary || null}
-              isOpen={isResumeSummaryOpen}
-              onToggle={() => setIsResumeSummaryOpen(!isResumeSummaryOpen)}
-            />
+          {/* Column C: 통합 사이드 패널 */}
+          <div className="lg:col-span-3" id="panel-compliance-right">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs flex flex-col">
 
-            {/* Compliance Results checklist */}
-            <ComplianceSummaryCard 
-              complianceSummary={complianceStats}
-            />
+              {/* 지원자 정보 */}
+              <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-slate-800 truncate leading-tight">
+                      {selectedApplicant?.masked_code || "—"}
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium mt-0.5">
+                      {selectedApplicant?.career ? `경력 ${selectedApplicant.career}` : "지원자"}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsResumeSummaryOpen(!isResumeSummaryOpen)}
+                  className="inline-flex items-center gap-1 py-1.5 px-2.5 text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer select-none whitespace-nowrap flex-shrink-0"
+                >
+                  <span>{isResumeSummaryOpen ? "접기" : "이력서 요약"}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    {isResumeSummaryOpen ? <path d="M18 15l-6-6-6 6"/> : <path d="M6 9l6 6 6-6"/>}
+                  </svg>
+                </button>
+              </div>
+
+              {/* 이력서 요약 (펼침) */}
+              {isResumeSummaryOpen && selectedApplicant?.resume_summary && (
+                <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex flex-col gap-3">
+                  {[
+                    { label: "경력 요약", content: selectedApplicant.resume_summary.career_summary },
+                    { label: "주요 프로젝트", content: selectedApplicant.resume_summary.project_summary },
+                    { label: "핵심 보유기술", content: selectedApplicant.resume_summary.skill_summary },
+                  ].map(({ label, content }) => (
+                    <div key={label}>
+                      <p className="text-[11px] font-bold text-slate-600 mb-0.5">{label}</p>
+                      <p className="text-[11px] text-slate-500 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: content?.replace(/\n/g, "<br/>") || "-" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 구분선 + 검수 결과 타이틀 */}
+              <div className="px-5 pt-4 pb-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">검수 결과 요약</span>
+              </div>
+
+              {/* 배너 */}
+              <div className="mx-4 mb-3 rounded-xl p-3 flex items-center gap-3 bg-emerald-50 border border-emerald-100">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-extrabold text-emerald-700 leading-snug">모든 질문이</span>
+                  <span className="text-[11px] font-extrabold text-emerald-700 leading-snug">가이드라인을 준수했습니다.</span>
+                </div>
+              </div>
+
+              {/* 체크리스트 */}
+              <div className="px-4 pb-4 flex flex-col">
+                {[
+                  { label: "고용노동부 가이드 준수", passed: complianceStats.guidelinePassedCount },
+                  { label: "법령 위반 소지 없음",   passed: complianceStats.lawViolationFreeCount },
+                  { label: "편향·차별 표현 없음",   passed: complianceStats.biasFreeCount },
+                ].map(({ label, passed }) => (
+                  <div key={label} className="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-600">{label}</span>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-600 tabular-nums">
+                      {complianceStats.totalCount > 0 ? `${passed}/${complianceStats.totalCount}` : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
           </div>
 
         </div>
@@ -393,38 +501,17 @@ export default function InterviewQuestionPage() {
           <BottomNotice />
           
           <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto" id="bottom-actions-container">
-            {!isGenerating && questions.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleRegenerateQuestions}
-                  className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-4 border border-slate-200 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs select-none transition-all leading-none"
-                  id="incard-regenerate-btn"
-                >
-                  <span>🔄 다시 생성하기</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadHwp}
-                  className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-4 border border-slate-200 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs select-none transition-all leading-none"
-                  id="incard-hwp-btn"
-                >
-                  <span>📥 hwp로 저장하기</span>
-                </button>
-              </>
-            )}
-            
             <button
               type="button"
               onClick={handleSaveQuestionList}
-              disabled={isSaving || questions.length === 0}
+              disabled={questions.length === 0}
               className="w-full sm:w-auto bg-[#00194B] hover:bg-[#002D80] active:bg-[#001030] leading-none text-white font-bold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md select-none group transition-all disabled:opacity-40 whitespace-nowrap"
               id="bottom-pdf-save-btn"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>{isSaving ? "저장 중..." : "면접 질문 목록 저장 (.pdf)"}</span>
+              <span>면접 질문 목록 저장 (.pdf)</span>
             </button>
           </div>
         </div>

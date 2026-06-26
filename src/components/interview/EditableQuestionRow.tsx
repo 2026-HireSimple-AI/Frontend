@@ -11,7 +11,7 @@ interface EditableQuestionRowProps {
   onChangeQuestionText: (id: number, text: string) => void;
   onImportanceChange?: (id: number, val: number) => void;
   onTypeChange?: (id: number, type: string) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number) => void | Promise<void>;
   onReplaceWithRecommended: (id: number) => void;
 }
 
