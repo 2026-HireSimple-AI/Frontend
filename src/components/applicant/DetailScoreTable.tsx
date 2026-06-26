@@ -26,7 +26,9 @@ export default function DetailScoreTable({
 
   // 가중치 합 및 가중 반영 점수 합 계산과정검증
   const totalWeight = scoreItems.reduce((acc, cur) => acc + cur.weight, 0);
-  const calculatedTotalWeightedScore = totalScore / 10;
+  const calculatedTotalWeightedScore = scoreItems.reduce(
+  (acc, cur) => acc + cur.weighted_score, 0
+);
 
   return (
     <div className="overflow-x-auto w-full" id="detail-score-table-wrapper">
@@ -37,7 +39,7 @@ export default function DetailScoreTable({
             <th className={styles.detailTableHeader}>세부 평가 항목</th>
             <th className={styles.detailTableHeader}>AI 점수 (100)</th>
             <th className={styles.detailTableHeader}>반영 비율 (%)</th>
-            <th className={styles.detailTableHeader} style={{ textAlign: "right", borderTopRightRadius: "0.5rem" }}>가중 반영 점수 (10점 만점)</th>
+            <th className={styles.detailTableHeader} style={{ textAlign: "right", borderTopRightRadius: "0.5rem" }}>가중 반영 점수 (100점 만점)</th>
           </tr>
         </thead>
         <tbody>
@@ -91,7 +93,7 @@ export default function DetailScoreTable({
               {totalWeight}%
             </td>
             <td className={`${styles.detailTableCell} ${styles.weightedScoreCell}`} style={{ borderBottomRightRadius: "0.5rem" }}>
-              {calculatedTotalWeightedScore.toFixed(2)} / 10점
+              {calculatedTotalWeightedScore.toFixed(2)} / 100점
             </td>
           </tr>
         </tbody>

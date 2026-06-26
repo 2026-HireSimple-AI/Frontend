@@ -109,7 +109,7 @@ export default function CompareApplicantSelectCard({
                     {globalRank}
                   </td>
                   <td className={styles.cell}>
-                    <span className={styles.cellCode}>{app.masked_code}</span>
+                    <span className={styles.cellCode}>{app.real_name || app.masked_code}</span>
                     <span className={styles.cellCareer}>{app.career}</span>
                   </td>
                   <td className={`${styles.cell} ${styles.cellScore}`}>

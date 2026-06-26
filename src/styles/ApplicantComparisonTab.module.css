@@ -278,7 +278,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  height: 680px; /* 고정적인 이중 카드 높이를 주어 내부에 독립 스크롤을 활성화함 */
+  min-height: 680px;  /* 고정적인 이중 카드 높이를 주어 내부에 독립 스크롤을 활성화함 */
   overflow: hidden;
 }
 

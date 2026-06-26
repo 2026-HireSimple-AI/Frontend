@@ -40,7 +40,7 @@ export default function SelectedApplicantSummaryCard({
                   {index + 1}
                 </span>
                 <div className="flex flex-col select-none">
-                  <span className={styles.summaryCode}>{applicant.masked_code}</span>
+                  <span className={styles.summaryCode}>{applicant.real_name || applicant.masked_code}</span>
                   <span className={styles.summaryCareer}>{applicant.career || "신입"}</span>
                 </div>
               </div>
