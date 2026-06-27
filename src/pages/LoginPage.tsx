@@ -50,7 +50,9 @@ export default function LoginPage() {
         
         {/* 헤더 */}
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-[#00194B] text-white flex items-center justify-center mx-auto mb-2 font-bold text-lg shadow">H</div>
+          <div onClick={() => navigate("/analysis/new")}
+              className="w-12 h-12 rounded-xl bg-[#00194B] text-white flex items-center justify-center mx-auto mb-2 font-bold text-lg select-none shadow cursor-pointer hover:bg-[#002D80] transition-colors"
+            >H</div>
           <h2 className="text-xl font-bold text-[#1C1F26] tracking-tight">Hire Simple AI 채용담당자 로그인</h2>
           <p className="text-xs text-[#707887] mt-1">평가 분석 데이터를 영구 저장하고 분석 이력을 관리하려면 로그인해 주십시오.</p>
         </div>
