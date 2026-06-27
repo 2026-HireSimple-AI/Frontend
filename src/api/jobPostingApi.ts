@@ -107,51 +107,38 @@ export async function createJobPosting(sourceUrl: string): Promise<JobPostingRes
 /**
  * 채용공고 상세 조회 (GET /job-posting/{job_posting_id})
  */
-export async function getJobPosting(jobPostingId: number): Promise<JobPostingResult> {
+export async function getJobPosting(
+  job_posting_id: number
+): Promise<JobPostingResult> {
   const baseUrl = getApiBaseUrl();
 
-  try {
-    const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  const response = await fetch(`${baseUrl}/job-posting/${job_posting_id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json.success && json.data) {
-        saveToLocalStorage(`job_posting_${jobPostingId}`, json.data);
-        return json.data;
-      }
-    }
-  } catch (error) {
-    console.warn("실제 백엔드 API 연결 실패, Mock 데이터로 진행합니다:", error);
+  if (!response.ok) {
+    throw new Error("채용공고 조회 실패");
   }
 
-  const localVal = getFromLocalStorage(`job_posting_${jobPostingId}`);
-  if (localVal) {
-    return localVal;
+  const json = await response.json();
+
+  if (!json.success || !json.data) {
+    throw new Error("채용공고 데이터가 없습니다.");
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  return {
-    job_posting_id: jobPostingId,
-    title: "공고문 1",
-    input_type: "url",
-    source_url: "https://example.com/careers/senior-backend",
-    formatted_posting: [],
-    skills_stack: []
-  };
+  return json.data;
 }
 
 export async function updateJobPostingTitle(
-  jobPostingId: number,
+  job_posting_id: number,
   title: string
 ) {
   const baseUrl = getApiBaseUrl();
 
-  const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}/title`, {
+  const response = await fetch(`${baseUrl}/job-posting/${job_posting_id}/title`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
