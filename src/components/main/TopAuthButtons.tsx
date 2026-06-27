@@ -27,10 +27,16 @@ export default function TopAuthButtons({
 }: TopAuthButtonsProps) {
   if (isLoggedIn) {
     return (
-      <div className="flex items-center gap-4 select-none">
+      <div className="flex items-center gap-3 select-none">
         <span className="text-sm font-medium text-[#344054]">
           <strong className="text-[#00194B]">{userName || "채용담당자"}</strong> 님 환영합니다
         </span>
+        <button
+          onClick={onLogoutClick}
+          className="h-9 px-4 rounded-xl border border-[#D4D9E1] text-[#707887] bg-white text-xs font-medium hover:bg-[#F6F8FC] cursor-pointer transition-all active:scale-95"
+        >
+          로그아웃
+        </button>
       </div>
     );
   }

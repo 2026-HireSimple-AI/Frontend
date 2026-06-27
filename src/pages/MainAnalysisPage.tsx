@@ -25,6 +25,8 @@ import JobPostingUrlCard from "../components/main/JobPostingUrlCard";
 import ResumeUploadCard from "../components/main/ResumeUploadCard";
 import StartAnalysisButton from "../components/main/StartAnalysisButton";
 import SecurityNotice from "../components/main/SecurityNotice";
+import { getToken } from "../api/authApi";
+
 
 // 생성한 API 호출 모듈들
 import { createJobPosting, formatJobPosting } from "../api/jobPostingApi";
@@ -53,7 +55,7 @@ export default function MainAnalysisPage() {
 
   // 컴포넌트 마운트 시 인증정보 로드
   useEffect(() => {
-    const savedUser = localStorage.getItem("loggedInUser");
+    const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setIsLoggedIn(true);
       setUser(JSON.parse(savedUser));
@@ -66,7 +68,9 @@ export default function MainAnalysisPage() {
 
   // 로그아웃 제어
   const handleLogout = () => {
-    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setUser(null);
   };
@@ -114,6 +118,17 @@ export default function MainAnalysisPage() {
     // 간단한 포맷 검사
     if (!jobUrl.toLowerCase().startsWith("http://") && !jobUrl.toLowerCase().startsWith("https://")) {
       setErrorMessage("올바른 URL 형식(https://example.com/job-posting)으로 입력해주세요.");
+      return;
+    }
+
+    // 이력서 있으면 API 호출 전에 바로 로그인 체크
+    if (selectedFiles.length > 0 && !getToken()) {
+      const goLogin = window.confirm(
+        "이력서 분석은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?"
+      );
+      if (goLogin) {
+        navigate("/login");
+      }
       return;
     }
 
