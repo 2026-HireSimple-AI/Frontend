@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { User, Mail, Lock, Building, CheckCircle2 } from "lucide-react";
+import { signup } from "../api/authApi";
+
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -18,28 +20,39 @@ export default function SignupPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmit, setIsSubmit] = useState(false);
 
-  const handleSignupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password.trim() || !name.trim() || !company.trim()) {
-      alert("모든 필수 입력 필드를 기입해 주십시오.");
-      return;
-    }
+const handleSignupSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!email.trim() || !password.trim() || !name.trim() || !company.trim()) {
+    alert("모든 필수 입력 필드를 기입해 주십시오.");
+    return;
+  }
 
-    setIsSubmit(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  if (password.length < 6) {
+    alert("비밀번호는 최소 6자 이상이어야 합니다.");
+    return;
+  }
 
-    // 로컬 스토리지 등에 가상 가입 저장 후 성공 상태 전환
-    const registerUser = {
+  setIsSubmit(true);
+
+  try {
+    // 실제 API 호출
+    await signup({
       email: email.trim(),
+      password: password.trim(),
       name: name.trim(),
       company_name: company.trim()
-    };
-    
-    // 데모 편의성을 위해 단시간 내 로그인 시 활용 가능하게 임시 기입
-    localStorage.setItem("tmp_registered", JSON.stringify(registerUser));
+    });
+
+    // 기존 임시 데이터 제거
+    localStorage.removeItem("tmp_registered");
     setIsSuccess(true);
+
+  } catch (err: any) {
+    alert(err.message || "회원가입에 실패했습니다.");
+  } finally {
     setIsSubmit(false);
-  };
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#F6F8FC] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans select-none">
