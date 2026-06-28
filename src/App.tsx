@@ -12,6 +12,7 @@
 
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import PrivateRoute from "./components/layout/PrivateRoute";
 
 // 페이지 컴포넌트 임포트
 import MainAnalysisPage from "./pages/MainAnalysisPage";
@@ -25,23 +26,35 @@ import SignupPage from "./pages/SignupPage";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+       <Routes>
         {/* 분석 생성 홈 */}
         <Route path="/" element={<Navigate to="/analysis/new" replace />} />
-        <Route path="/analysis/new" element={<MainAnalysisPage />} />
+        <Route path="/analysis/new" element={
+          <MainAnalysisPage />
+        } />
 
         {/* STEP 2. 평가 기준 검증 */}
-        <Route path="/analysis/:jobPostingId/criteria-review" element={<CriteriaReviewPage />} />
+        <Route path="/analysis/:jobPostingId/criteria-review" element={
+          <CriteriaReviewPage />
+        } />
 
         {/* STEP 3. 지원자 적합도 분석 */}
-        <Route path="/analysis/:jobPostingId/applicants" element={<ApplicantAnalysisPage />} />
+        <Route path="/analysis/:jobPostingId/applicants" element={
+          <PrivateRoute><ApplicantAnalysisPage /></PrivateRoute>
+        } />
 
         {/* STEP 4. 면접 질문 생성 */}
-        <Route path="/analysis/:jobPostingId/interview-questions" element={<InterviewQuestionsPage />} />
-        <Route path="/analysis/:jobPostingId/applicants/:applicantId/interview-questions" element={<InterviewQuestionsPage />} />
+        <Route path="/analysis/:jobPostingId/interview-questions" element={
+          <PrivateRoute><InterviewQuestionsPage /></PrivateRoute>
+        } />
+        <Route path="/analysis/:jobPostingId/applicants/:applicantId/interview-questions" element={
+          <PrivateRoute><InterviewQuestionsPage /></PrivateRoute>
+        } />
 
         {/* 분석 기록 관리 (사이드바 메뉴연동) */}
-        <Route path="/analysis/manage" element={<ManageAnalysisPage />} />
+        <Route path="/analysis/manage" element={
+          <PrivateRoute><ManageAnalysisPage /></PrivateRoute>
+        } />
 
         {/* 인증 게이트웨이 */}
         <Route path="/login" element={<LoginPage />} />

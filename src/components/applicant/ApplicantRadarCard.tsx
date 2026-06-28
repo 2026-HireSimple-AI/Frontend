@@ -46,7 +46,7 @@ export default function ApplicantRadarCard({
   return (
     <div className={styles.radarCard} id="applicant-radar-card">
       <h3 className={styles.radarTitle}>
-        {applicant.masked_code} 종합 적합도 능력치
+        {applicant.real_name || applicant.masked_code} 종합 적합도 능력치
       </h3>
 
       <div className={styles.radarScoreWrapper}>
@@ -101,10 +101,10 @@ export default function ApplicantRadarCard({
           <circle cx={x3} cy={y3} r="4" fill="#00194B" stroke="#6D5DFC" strokeWidth="1.5" />
 
           {/* 6. 레이블 텍스트 수치 매핑 */}
-          <text x={cx} y={cy - r - 8} textAnchor="middle" fill="#475467" fontSize="10" fontWeight="700">자격 조건 ({req}점)</text>
-          <text x={cx + r + 8} y={cy + 4} textAnchor="start" fill="#475467" fontSize="10" fontWeight="700">기술 스택 ({skill}점)</text>
-          <text x={cx} y={cy + r + 15} textAnchor="middle" fill="#475467" fontSize="10" fontWeight="700">주요 업무 ({task}점)</text>
-          <text x={cx - r - 8} y={cy + 4} textAnchor="end" fill="#475467" fontSize="10" fontWeight="700">우대 사항 ({pref}점)</text>
+          <text x={cx} y={cy - r - 8} textAnchor="middle" fill="#475467" fontSize="10" fontWeight="700">자격 조건</text>
+          <text x={cx + r + 8} y={cy + 4} textAnchor="start" fill="#475467" fontSize="10" fontWeight="700">기술 스택</text>
+          <text x={cx} y={cy + r + 15} textAnchor="middle" fill="#475467" fontSize="10" fontWeight="700">주요 업무</text>
+          <text x={cx - r - 8} y={cy + 4} textAnchor="end" fill="#475467" fontSize="10" fontWeight="700">우대 사항</text>
         </svg>
       </div>
     </div>

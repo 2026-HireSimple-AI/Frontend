@@ -6,6 +6,7 @@ import styles from "../../styles/ApplicantComparisonTab.module.css";
 interface ComparisonApplicantHeaderProps {
   applicant: {
     id: number;
+    real_name: string;
     masked_code: string;
   };
   rankNo: number;
@@ -37,7 +38,7 @@ export default function ComparisonApplicantHeader({
         <span className={`${styles.rankBadge} ${getBadgeColor(rankNo)}`}>
           {rankNo}
         </span>
-        <span className={styles.headerCode}>{applicant.masked_code}</span>
+        <span className={styles.headerCode}>{applicant.real_name || applicant.masked_code}</span>
       </div>
       <button
         type="button"

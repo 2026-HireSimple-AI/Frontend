@@ -96,7 +96,7 @@ export default function ApplicantRankingCard({
                   {rank}위
                 </td>
                 <td className={styles.rankingCell}>
-                  <div className={styles.applicantCodeText}>{app.masked_code}</div>
+                  <div className={styles.applicantCodeText}>{app.real_name || app.masked_code}</div>
                   <span className={styles.applicantCareerMini}>{app.career}</span>
                 </td>
                 <td className={styles.rankingCell} style={{ textAlign: "right" }}>
