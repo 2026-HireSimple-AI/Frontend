@@ -53,10 +53,12 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
 
   try {
     // 실제 API 전송 시도
+    const token = localStorage.getItem("access_token");
     const response = await fetch(`${baseUrl}/job-posting/upload`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` }),
       },
       body: JSON.stringify({
         url: sourceUrl
@@ -76,19 +78,20 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
   }
 
   // 백엔드가 없거나 오류 시 Mock 동작
-  await new Promise((resolve) => setTimeout(resolve, 800)); // 0.8초 딜레이로 로딩 체감
+  // await new Promise((resolve) => setTimeout(resolve, 800)); // 0.8초 딜레이로 로딩 체감
 
-  // 랜덤한 임시 ID 생성
-  const mockId = Math.floor(Math.random() * 900000) + 100000;
-  const mockResult: JobPostingData = {
-    job_posting_id: mockId,
-    title: calculatedTitle,
-    input_type: "url",
-    source_url: sourceUrl,
-  };
+  // // 랜덤한 임시 ID 생성
+  // const mockId = Math.floor(Math.random() * 900000) + 100000;
+  // const mockResult: JobPostingData = {
+  //   job_posting_id: mockId,
+  //   title: calculatedTitle,
+  //   input_type: "url",
+  //   source_url: sourceUrl,
+  // };
 
-  saveToLocalStorage(`job_posting_${mockId}`, mockResult);
-  return mockResult;
+  // saveToLocalStorage(`job_posting_${mockId}`, mockResult);
+  // return mockResult;
+    throw new Error("채용공고 등록에 실패했습니다. 다시 시도해주세요.");
 }
 
 /**
