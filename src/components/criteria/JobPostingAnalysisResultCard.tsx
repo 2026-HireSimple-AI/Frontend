@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 interface FormattedPosting {
   category: string;
-  content: string;
+  content: string[];
 }
 
 interface JobPostingAnalysisResultCardProps {
@@ -96,9 +96,11 @@ export default function JobPostingAnalysisResultCard({
                   </div>
                   
                   {/* 내용 설명 */}
-                  <p className="text-xs text-[#344054] font-medium leading-relaxed flex-1">
-                    {post.content}
-                  </p>
+                  <ul className="text-xs text-[#344054] font-medium leading-relaxed flex-1">
+                    {post.content.map((item, index) => (
+                    <li key={index}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               ))
             ) : (

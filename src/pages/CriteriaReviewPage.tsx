@@ -19,7 +19,7 @@ import CriteriaEditModal from "../components/criteria/CriteriaEditModal";
 import BottomNotice from "../components/criteria/BottomNotice";
 import NextStepButton from "../components/criteria/NextStepButton";
 
-import { getJobPosting, formatJobPosting } from "../api/jobPostingApi";
+import { getJobPosting, updateJobPostingTitle } from "../api/jobPostingApi";
 import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion } from "../api/criteriaApi";
 import { uploadResumes } from "../api/resumeApi";
 
@@ -30,7 +30,7 @@ import styles from "../styles/CriteriaReviewPage.module.css";
 
 interface FormattedPosting {
   category: string;
-  content: string;
+  content: string[];
 }
 
 interface UploadedFile {
@@ -90,36 +90,29 @@ export default function CriteriaReviewPage() {
         const posting = await getJobPosting(parsedJobId);
         setJobPostingTitle(posting.title || "공고문 1");
 
-        // 로컬 임시 포맷팅 데이터 로딩 또는 기본값 세팅
-        const cachedFormat = localStorage.getItem(`formatted_${parsedJobId}`);
-        if (cachedFormat) {
-          const parsed = JSON.parse(cachedFormat);
-          // 실제 key가 formatted_postings 임
-          setFormattedPostings(
-            parsed.formatted_postings?.map((f: any) => ({
-              category: f.category,
-              content: f.content
-            })) || []
-          );
-        } else {
-          // 기본 mockFormattedPostings
-          const defaultFormatted = [
-            {
-              category: "자격 조건",
-              content: "백엔드 개발 3년 이상, Java / Spring Boot 사용 경험, 관계형 DB(MySQL, PostgreSQL) 사용 경험"
-            },
-            {
-              category: "주요 업무",
-              content: "서버 개발 및 유지보수, RESTful API 설계 및 개발, 데이터베이스 설계 및 최적화"
-            },
-            {
-              category: "우대 사항",
-              content: "AWS 등 클라우드 서비스 경험, 대용량 서비스 개발 경험, 테스트 코드 작성 경험"
-            }
-          ];
-          setFormattedPostings(defaultFormatted);
-          localStorage.setItem(`formatted_${parsedJobId}`, JSON.stringify({ formatted_postings: defaultFormatted }));
-        }
+        const categoryLabelMap: Record<string, string> = {
+          requirement: "자격 조건",
+          task: "주요 업무",
+          preference: "우대 사항",
+        };
+
+        console.log("jobPostingId:", jobPostingId);
+        console.log("parsedJobId:", parsedJobId);
+
+        setFormattedPostings(
+          (posting.formatted_posting || [])
+            .filter((item: any) => item.sort_order !== null)
+            .sort((a: any, b: any) => a.sort_order - b.sort_order)
+            .map((item: any) => ({
+              category: categoryLabelMap[item.category] || item.category,
+              // content: JSON.parse(item.content).join(", ")
+              content: Array.isArray(item.content)
+              ? item.content
+              : JSON.parse(item.content)
+            }))
+        );
+        
+
 
         // 평가 기준 데이터 로딩
         const fetchedCriteria = await getEvaluationCriteria(parsedJobId);
@@ -159,23 +152,35 @@ export default function CriteriaReviewPage() {
     }
   }, [uploadedFiles]);
 
-  // 공고 타이틀 조율 수정
-  const handleEditJobPosting = (newTitle: string) => {
+  // // 공고 타이틀 조율 수정
+  // const handleEditJobPosting = (newTitle: string) => {
+  //   setJobPostingTitle(newTitle);
+  //   // 로컬 스토리지 데이터 동기화
+  //   const targetJob = localStorage.getItem(`job_posting_${parsedJobId}`);
+  //   if (targetJob) {
+  //     const parsed = JSON.parse(targetJob);
+  //     parsed.title = newTitle;
+  //     localStorage.setItem(`job_posting_${parsedJobId}`, JSON.stringify(parsed));
+  //   } else {
+  //     localStorage.setItem(`job_posting_${parsedJobId}`, JSON.stringify({
+  //       job_posting_id: parsedJobId,
+  //       title: newTitle,
+  //       input_type: "url",
+  //       source_url: ""
+  //     }));
+  //   }
+  // };
+  const handleEditJobPosting = async (newTitle: string) => {
     setJobPostingTitle(newTitle);
-    // 로컬 스토리지 데이터 동기화
-    const targetJob = localStorage.getItem(`job_posting_${parsedJobId}`);
-    if (targetJob) {
-      const parsed = JSON.parse(targetJob);
-      parsed.title = newTitle;
-      localStorage.setItem(`job_posting_${parsedJobId}`, JSON.stringify(parsed));
-    } else {
-      localStorage.setItem(`job_posting_${parsedJobId}`, JSON.stringify({
-        job_posting_id: parsedJobId,
-        title: newTitle,
-        input_type: "url",
-        source_url: ""
-      }));
-    }
+
+    localStorage.setItem(`job_posting_${parsedJobId}`, JSON.stringify({
+      job_posting_id: parsedJobId,
+      title: newTitle,
+      input_type: "url",
+      source_url: ""
+    }));
+
+    await updateJobPostingTitle(parsedJobId, newTitle);
   };
 
   // 다시 추출하기 기능 수행
@@ -185,12 +190,25 @@ export default function CriteriaReviewPage() {
 
     try {
       // 1. 공고 구조화 수행 API 수신
-      const formatRes = await formatJobPosting(parsedJobId);
+      const formatRes = await getJobPosting(parsedJobId);
+
+      const toStringArray = (content: any): string[] => {
+        if (Array.isArray(content)) return content;
+
+        try {
+          const parsed = JSON.parse(content);
+          return Array.isArray(parsed) ? parsed : [String(parsed)];
+        } catch {
+          return [String(content)];
+        }
+      };
+
       // "자격 요건" 등의 카테고리 매핑 보정
-      const mappedFormat = formatRes.formatted_postings?.map(item => ({
+      const mappedFormat = formatRes.formatted_posting?.map((item: any) => ({
         category: item.category === "자격 요건" ? "자격 조건" : item.category,
-        content: item.content
+        content: toStringArray(item.content)
       })) || [];
+
       setFormattedPostings(mappedFormat);
 
       // 2. 평가 기준 생성 API 수신

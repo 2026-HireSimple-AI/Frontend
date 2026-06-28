@@ -29,7 +29,7 @@ import { getToken } from "../api/authApi";
 
 
 // 생성한 API 호출 모듈들
-import { createJobPosting, formatJobPosting } from "../api/jobPostingApi";
+import { createJobPosting } from "../api/jobPostingApi";
 import { createEvaluationCriteria } from "../api/criteriaApi";
 import { uploadResumes } from "../api/resumeApi";
 
@@ -149,7 +149,7 @@ export default function MainAnalysisPage() {
 
       // CASE 1 & CASE 2 공통: 2단계 - LLM 분석 및 공고 구조화 수행 (POST /job-postings/{id}/format)
       setApiStepStatus("2/3 AI와 연동하여 필요역량(기술스택/자격조건) 구조화 중...");
-      await formatJobPosting(currentJobPostingId);
+      await createJobPosting(currentJobPostingId);
 
       // CASE 1 & CASE 2 공통: 3단계 - 공고문 기반 핵심 채용평가 기준 생성 (POST /job-postings/{id}/criteria)
       setApiStepStatus("3/3 가중치가 반영된 세부 평가 기준표 도출 중...");

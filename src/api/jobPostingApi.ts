@@ -1,6 +1,6 @@
 /**
  * 이 파일은 채용공고(Job Posting) 등록 및 AI 구조화 분석 API를 처리합니다.
- * 백엔드(FastAPI)가 아직 없는 경우를 위해 Mock 데이터 형태로 먼저 동작하며, 
+ * 백엔드가 URL을 받아 스크랩핑 + 포메팅을 한 번에 처리하므로, 프론트도 단일 호출로 맞춥니다.
  * VITE_API_BASE_URL 환경 변수가 잡히는 즉시 실제 백엔드 API와 연결됩니다.
  */
 
@@ -26,30 +26,26 @@ const getFromLocalStorage = (key: string): any => {
   }
 };
 
-export interface JobPostingData {
-  job_posting_id: number;
-  title: string;
-  input_type: string;
-  source_url: string;
-}
-
 export interface FormattedPostingItem {
   category: string;
   content: string;
 }
 
-export interface FormattedPostingResponse {
+export interface JobPostingResult {
   job_posting_id: number;
+  title: string;
+  input_type: string;
+  source_url: string;
   formatted_posting: FormattedPostingItem[];
   skills_stack: string[];
 }
 
 /**
- * 1. 채용공고 등록 (POST /job-posting)
+ * 채용공고 등록 + 구조화 (POST /job-posting/upload)
+ * 백엔드가 스크랩핑과 포메팅을 한 번에 처리하여 결과를 반환합니다.
  */
-export async function createJobPosting(sourceUrl: string, title?: string): Promise<JobPostingData> {
+export async function createJobPosting(sourceUrl: string): Promise<JobPostingResult> {
   const baseUrl = getApiBaseUrl();
-  const calculatedTitle = title || "새로운 백엔드 개발자 채용";
 
   try {
     // 실제 API 전송 시도
@@ -68,7 +64,6 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
     if (response.ok) {
       const json = await response.json();
       if (json.success && json.data) {
-        // 성공 시 로컬 세션에도 임시 저장
         saveToLocalStorage(`job_posting_${json.data.job_posting_id}`, json.data);
         return json.data;
       }
@@ -170,10 +165,6 @@ export async function formatJobPosting(jobPostingId: number): Promise<FormattedP
         content: "백엔드 개발 경험 2년 이상",
       },
       {
-        category: "기술 스택",
-        content: "Java, Spring Boot, MySQL",
-      },
-      {
         category: "주요 업무",
         content: "REST API 개발 및 운영",
       },
@@ -190,6 +181,55 @@ export async function formatJobPosting(jobPostingId: number): Promise<FormattedP
     ]
   };
 
-  saveToLocalStorage(`formatted_${jobPostingId}`, mockResult);
+  saveToLocalStorage(`job_posting_${mockId}`, mockResult);
   return mockResult;
+}
+
+/**
+ * 채용공고 상세 조회 (GET /job-posting/{job_posting_id})
+ */
+export async function getJobPosting(
+  job_posting_id: number
+): Promise<JobPostingResult> {
+  const baseUrl = getApiBaseUrl();
+
+  const response = await fetch(`${baseUrl}/job-posting/${job_posting_id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("채용공고 조회 실패");
+  }
+
+  const json = await response.json();
+
+  if (!json.success || !json.data) {
+    throw new Error("채용공고 데이터가 없습니다.");
+  }
+
+  return json.data;
+}
+
+export async function updateJobPostingTitle(
+  job_posting_id: number,
+  title: string
+) {
+  const baseUrl = getApiBaseUrl();
+
+  const response = await fetch(`${baseUrl}/job-posting/${job_posting_id}/title`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({title}),
+  });
+
+  if (!response.ok) {
+    throw new Error("공고 제목 수정 실패");
+  }
+
+  return await response.json();
 }
