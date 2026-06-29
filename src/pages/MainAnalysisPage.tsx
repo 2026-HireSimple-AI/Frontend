@@ -143,13 +143,13 @@ export default function MainAnalysisPage() {
     try {
       // CASE 1 & CASE 2 공통: 1단계 - 채용공고 생성등록 (POST /job-postings)
       setApiStepStatus("1/3 채용공고문 수집 및 DB 등록 중...");
-      const mockResultTitle = jobUrl.includes("backend") ? "백엔드 핵심 개발자 채용" : "우수 소프트웨어 엔지니어 영입공고";
-      const jobPosting = await createJobPosting(jobUrl.trim(), mockResultTitle);
+      //const mockResultTitle = jobUrl.includes("backend") ? "백엔드 핵심 개발자 채용" : "우수 소프트웨어 엔지니어 영입공고";
+      const jobPosting = await createJobPosting(jobUrl.trim());
       currentJobPostingId = jobPosting.job_posting_id;
 
       // CASE 1 & CASE 2 공통: 2단계 - LLM 분석 및 공고 구조화 수행 (POST /job-postings/{id}/format)
-      setApiStepStatus("2/3 AI와 연동하여 필요역량(기술스택/자격조건) 구조화 중...");
-      await createJobPosting(currentJobPostingId);
+      // setApiStepStatus("2/3 AI와 연동하여 필요역량(기술스택/자격조건) 구조화 중...");
+      // await createJobPosting(currentJobPostingId);
 
       // CASE 1 & CASE 2 공통: 3단계 - 공고문 기반 핵심 채용평가 기준 생성 (POST /job-postings/{id}/criteria)
       setApiStepStatus("3/3 가중치가 반영된 세부 평가 기준표 도출 중...");
@@ -159,6 +159,7 @@ export default function MainAnalysisPage() {
       if (selectedFiles.length > 0) {
         setApiStepStatus(`이력서 ${selectedFiles.length}건 마스킹 처리 및 배치 업로드 중...`);
         await uploadResumes(currentJobPostingId, selectedFiles);
+        
       } else {
         localStorage.setItem(`uploaded_resumes_${currentJobPostingId}`, JSON.stringify({ uploaded_count: 0, files: [] }));
       }
