@@ -61,7 +61,7 @@ export default function SkillMatchCard({
       </div>
 
       <div className={styles.skillTagList} id="skills-tag-list">
-        {skills.map((skill) => (
+        {[...new Set(skills)].map((skill) => (
           <span key={skill} className={styles.skillTag}>
             {skill}
           </span>
