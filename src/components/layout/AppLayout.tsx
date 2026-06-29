@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import { Link, useNavigate } from "react-router-dom";
+import { logout } from "../../api/authApi";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -45,10 +46,11 @@ export default function AppLayout({
 
   const handleLogoutClick = () => {
     localStorage.removeItem("loggedInUser");
+    logout();
     if (onLogout) {
       onLogout();
     } else {
-      window.location.reload();
+      navigate("/login"); //window.location.reload();
     }
   };
 

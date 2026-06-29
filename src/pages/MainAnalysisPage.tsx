@@ -25,7 +25,7 @@ import JobPostingUrlCard from "../components/main/JobPostingUrlCard";
 import ResumeUploadCard from "../components/main/ResumeUploadCard";
 import StartAnalysisButton from "../components/main/StartAnalysisButton";
 import SecurityNotice from "../components/main/SecurityNotice";
-import { getToken } from "../api/authApi";
+import { getToken , logout  } from "../api/authApi";
 
 
 // 생성한 API 호출 모듈들
@@ -71,8 +71,11 @@ export default function MainAnalysisPage() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("loggedInUser");
+    logout();
     setIsLoggedIn(false);
     setUser(null);
+    navigate("/login");
   };
 
   // 로그인 모달/이동 버튼 클릭 시 동작
