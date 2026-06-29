@@ -63,6 +63,7 @@ export function saveToken(authData: AuthResponse): void {
   localStorage.setItem("access_token", authData.access_token);
   localStorage.setItem("refresh_token", authData.refresh_token);
   localStorage.setItem("user", JSON.stringify(authData.user));
+  localStorage.setItem("loggedInUser", JSON.stringify(authData.user));
 }
 
 export function getToken(): string | null {
