@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 interface FormattedPosting {
   category: string;
-  content: string[];
+  content: string[] | string;
 }
 
 interface JobPostingAnalysisResultCardProps {
@@ -91,16 +91,16 @@ export default function JobPostingAnalysisResultCard({
               formattedPostings.map((post, idx) => (
                 <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border-b border-[#F6F8FC] pb-3 last:border-0 last:pb-0">
                   {/* 카테고리 태그 */}
-                  <div className={`w-[90px] h-[32px] flex items-center justify-center rounded-lg text-xs font-bold flex-shrink-0 ${getBadgeStyle(post.category)}`}>
+                  <div className={`w-[90px] h-[32px] self-start flex items-center justify-center rounded-lg text-xs font-bold flex-shrink-0 ${getBadgeStyle(post.category)}`}>
                     {post.category}
                   </div>
                   
                   {/* 내용 설명 */}
                   <ul className="text-xs text-[#344054] font-medium leading-relaxed flex-1">
-                    {post.content.map((item, index) => (
+                  {(Array.isArray(post.content) ? post.content : [post.content]).map((item, index) => (
                     <li key={index}>{item}</li>
-                    ))}
-                  </ul>
+                  ))}
+                </ul>
                 </div>
               ))
             ) : (

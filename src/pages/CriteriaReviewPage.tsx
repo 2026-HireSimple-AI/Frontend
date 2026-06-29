@@ -19,7 +19,7 @@ import CriteriaEditModal from "../components/criteria/CriteriaEditModal";
 import BottomNotice from "../components/criteria/BottomNotice";
 import NextStepButton from "../components/criteria/NextStepButton";
 
-import { getJobPosting, updateJobPostingTitle } from "../api/jobPostingApi";
+import { getJobPosting, formatJobPosting, updateJobPostingTitle  } from "../api/jobPostingApi";
 import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion } from "../api/criteriaApi";
 import { uploadResumes } from "../api/resumeApi";
 
@@ -87,30 +87,25 @@ export default function CriteriaReviewPage() {
 
       try {
         // 공고 데이터 로딩
-        const posting = await getJobPosting(parsedJobId);
-        setJobPostingTitle(posting.title || "공고문 1");
+        const formatRes = await formatJobPosting(parsedJobId);
 
-        const categoryLabelMap: Record<string, string> = {
-          requirement: "자격 조건",
-          task: "주요 업무",
-          preference: "우대 사항",
+        const toStringArray = (content: any): string[] => {
+          if (Array.isArray(content)) return content;
+
+          try {
+            const parsed = JSON.parse(content);
+            return Array.isArray(parsed) ? parsed : [String(parsed)];
+          } catch {
+            return [String(content)];
+          }
         };
 
-        console.log("jobPostingId:", jobPostingId);
-        console.log("parsedJobId:", parsedJobId);
+        const mappedFormat = formatRes.formatted_posting?.map((item: any) => ({
+          category: item.category === "자격 요건" ? "자격 조건" : item.category,
+          content: toStringArray(item.content),
+        })) || [];
 
-        setFormattedPostings(
-          (posting.formatted_posting || [])
-            .filter((item: any) => item.sort_order !== null)
-            .sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((item: any) => ({
-              category: categoryLabelMap[item.category] || item.category,
-              // content: JSON.parse(item.content).join(", ")
-              content: Array.isArray(item.content)
-              ? item.content
-              : JSON.parse(item.content)
-            }))
-        );
+        setFormattedPostings(mappedFormat);
         
 
 
@@ -190,7 +185,7 @@ export default function CriteriaReviewPage() {
 
     try {
       // 1. 공고 구조화 수행 API 수신
-      const formatRes = await getJobPosting(parsedJobId);
+      const formatRes = await formatJobPosting(parsedJobId);
 
       const toStringArray = (content: any): string[] => {
         if (Array.isArray(content)) return content;
