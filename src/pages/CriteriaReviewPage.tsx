@@ -324,13 +324,36 @@ export default function CriteriaReviewPage() {
   };
 
   // 다음 STEP 3. 지원자 분석 결과 화면 이동
-  const handleGoNext = () => {
+  const handleGoNext = async () => {
     if (!uploadedFiles || uploadedFiles.length === 0) {
       setWarningMessage("분석할 이력서를 업로드해주세요.");
       return;
     }
     setWarningMessage(null);
     setIsNextLoading(true);
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+      
+      // localStorage에서 방금 업로드된 파일의 applicant_id 가져오기
+      const cachedResumes = localStorage.getItem(`uploaded_resumes_${parsedJobId}`);
+      if (cachedResumes) {
+          const parsedRes = JSON.parse(cachedResumes);
+          const files = Array.isArray(parsedRes) ? parsedRes : (parsedRes.files || []);
+          
+          // 업로드된 파일별로 개별 분석 호출
+          for (const file of files) {
+              const applicantId = file.applicant_id;
+              if (applicantId) {
+                  await fetch(`${baseUrl}/applicants/${applicantId}/analyze`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                  });
+              }
+          }
+      }
+  } catch (err) {
+      console.warn("분석 API 호출 실패:", err);
+  }
     setTimeout(() => {
       setIsNextLoading(false);
       navigate(`/analysis/${parsedJobId}/applicants`);

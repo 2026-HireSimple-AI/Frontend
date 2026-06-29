@@ -143,8 +143,8 @@ export default function MainAnalysisPage() {
     try {
       // CASE 1 & CASE 2 공통: 1단계 - 채용공고 생성등록 (POST /job-postings)
       setApiStepStatus("1/3 채용공고문 수집 및 DB 등록 중...");
-      const mockResultTitle = jobUrl.includes("backend") ? "백엔드 핵심 개발자 채용" : "우수 소프트웨어 엔지니어 영입공고";
-      const jobPosting = await createJobPosting(jobUrl.trim(), mockResultTitle);
+      //const mockResultTitle = jobUrl.includes("backend") ? "백엔드 핵심 개발자 채용" : "우수 소프트웨어 엔지니어 영입공고";
+      const jobPosting = await createJobPosting(jobUrl.trim());
       currentJobPostingId = jobPosting.job_posting_id;
 
       // CASE 1 & CASE 2 공통: 2단계 - LLM 분석 및 공고 구조화 수행 (POST /job-postings/{id}/format)
@@ -159,6 +159,7 @@ export default function MainAnalysisPage() {
       if (selectedFiles.length > 0) {
         setApiStepStatus(`이력서 ${selectedFiles.length}건 마스킹 처리 및 배치 업로드 중...`);
         await uploadResumes(currentJobPostingId, selectedFiles);
+        
       } else {
         localStorage.setItem(`uploaded_resumes_${currentJobPostingId}`, JSON.stringify({ uploaded_count: 0, files: [] }));
       }
