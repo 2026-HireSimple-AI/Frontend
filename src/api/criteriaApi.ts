@@ -116,13 +116,13 @@ export async function createEvaluationCriteria(jobPostingId: number): Promise<Cr
 }
 
 /**
- * 3.1. 평가 기준 조회 (GET /job-postings/{job_posting_id}/criteria)
+ * 3.1. 평가 기준 조회 (GET /job-posting/{job_posting_id}/criteria)
  */
 export async function getEvaluationCriteria(jobPostingId: number): Promise<CriteriaResponse> {
   const baseUrl = getApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/job-postings/${jobPostingId}/criteria`, {
+    const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}/criteria`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
