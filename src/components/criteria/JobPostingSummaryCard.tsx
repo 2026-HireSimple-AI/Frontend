@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Pencil, Check, X } from "lucide-react";
 
 interface JobPostingSummaryCardProps {
@@ -12,6 +12,10 @@ export default function JobPostingSummaryCard({
 }: JobPostingSummaryCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [titleInput, setTitleInput] = useState(jobPostingTitle || "공고문 1");
+
+  useEffect(() => {
+    setTitleInput(jobPostingTitle || "공고문 1");
+  }, [jobPostingTitle]);
 
   const handleSave = () => {
     if (titleInput.trim()) {
