@@ -323,28 +323,36 @@ export async function addInterviewQuestion(
 }
 
 /**
- * 8. 특정 질문 법령 준수 검수 요청 (POST /interview-questions/{question_id}/compliance-check)
+ * 9. LLM 기반 질문 법령 준수 검수 (POST /interview-questions/compliance-check)
+ * 키워드 매칭 대신 GPT가 문맥을 이해하여 판단합니다.
  */
-export async function checkQuestionCompliance(
-  questionId: number
-): Promise<{ success: boolean; status: "준수" | "경고" }> {
+export async function checkQuestionCompliance(questionText: string): Promise<{
+  success: boolean;
+  compliance_status: "준수" | "경고" | "심각";
+  compliance_reason: string | null;
+  revised_question_text: string | null;
+}> {
   const baseUrl = getApiBaseUrl();
 
   try {
-    const response = await fetch(`${baseUrl}/interview-questions/${questionId}/compliance-check`, {
+    const response = await fetch(`${baseUrl}/interview-questions/compliance-check`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question_text: questionText })
     });
 
     if (response.ok) {
       const json = await response.json();
-      return { success: true, status: json.status || "준수" };
+      return {
+        success: true,
+        compliance_status: json.compliance_status || "준수",
+        compliance_reason: json.compliance_reason || null,
+        revised_question_text: json.revised_question_text || null
+      };
     }
   } catch (err) {
-    console.warn("checkQuestionCompliance API 통신 실패, 자동 준수 처리.");
+    console.warn("checkQuestionCompliance API 통신 실패, 준수로 처리.");
   }
 
-  return { success: true, status: "준수" };
+  return { success: false, compliance_status: "준수", compliance_reason: null, revised_question_text: null };
 }
