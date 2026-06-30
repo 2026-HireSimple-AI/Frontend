@@ -9,6 +9,7 @@ import ApplicantComparisonTab from "../components/applicant/ApplicantComparisonT
 import BottomNotice from "../components/applicant/BottomNotice";
 import GenerateInterviewButton from "../components/applicant/GenerateInterviewButton";
 import InterviewCountModal from "../components/applicant/InterviewCountModal";
+import { logout } from "../api/authApi"; 
 
 // API 메소드 로드
 import {
@@ -132,12 +133,21 @@ export default function ApplicantAnalysisPage() {
     );
   };
 
+  const handleLogout = () => {
+      localStorage.removeItem("loggedInUser");
+      logout();
+      setIsLoggedIn(false);
+      setUser(null);
+      navigate("/login");
+  };
+
   return (
     <AppLayout
       activeMenu="new"
       isLoggedIn={isLoggedIn}
       user={user}
       currentStep={2} // 채용평가단계 지원자적합도 2단계
+      onLogout={handleLogout}
     >
       {isGenerating && (
         <div className="fixed inset-0 bg-black/40 z-50 flex flex-col items-center justify-center gap-4">

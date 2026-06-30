@@ -12,6 +12,7 @@ export default function SkillMatchCard({
   skills = [],
   skillScore = 85
 }: SkillMatchCardProps) {
+  const uniqueSkills = [...new Set(skills)];
   // 도넛 차트 SVG 파선 계산
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
@@ -24,7 +25,7 @@ export default function SkillMatchCard({
           <Cpu size={16} className="text-[#6D5DFC]" />
           <span>기술 스택 비교</span>
         </h3>
-        <span className="text-[11px] font-bold text-[#22C55E]">일치 기술 ({skills.length})</span>
+        <span className="text-[11px] font-bold text-[#22C55E]">일치 기술 ({uniqueSkills.length})</span>
       </div>
 
       {/* 동적 SVG 도넛 차트 */}
@@ -61,7 +62,7 @@ export default function SkillMatchCard({
       </div>
 
       <div className={styles.skillTagList} id="skills-tag-list">
-        {skills.map((skill) => (
+        {[...new Set(skills)].map((skill) => (
           <span key={skill} className={styles.skillTag}>
             {skill}
           </span>
