@@ -23,6 +23,7 @@ import {
   addInterviewQuestion,
   InterviewQuestion
 } from "../api/interviewQuestionApi";
+import { checkComplianceLocally } from "../utils/complianceCheck";
 
 export default function InterviewQuestionPage() {
   const { jobPostingId } = useParams<{ jobPostingId: string }>();
@@ -234,16 +235,22 @@ export default function InterviewQuestionPage() {
       const savedQuestions: InterviewQuestion[] = [];
 
       for (const q of updatedQuestions) {
+        // 저장 전 compliance 재검사
+        const { status: detectedStatus } = checkComplianceLocally(q.question_text);
+        const complianceStatus = detectedStatus !== "준수"
+          ? detectedStatus
+          : (q.compliance_status || "준수");
+
         if (q.id > 0) {
-          // 기존 질문 수정
+          // 기존 질문 수정 — compliance도 함께 업데이트
           await updateInterviewQuestion(q.id, q.question_text);
-          savedQuestions.push(q);
+          savedQuestions.push({ ...q, compliance_status: complianceStatus });
         } else if (selectedApplicantId) {
           // 신규 질문 DB에 추가
           const result = await addInterviewQuestion(selectedApplicantId, {
             question_type: q.question_type,
             question_text: q.question_text,
-            compliance_status: q.compliance_status || "준수",
+            compliance_status: complianceStatus,
             created_by: "USER"
           });
           if (result.success && result.data) {

@@ -163,16 +163,18 @@ export default function QuestionEditModal({
   // 8. Replace with recommended revised text
   const handleReplaceWithRecommended = (id: number) => {
     setDraftQuestions(prev => prev.map(q => {
-      if (q.id === id && q.revised_question_text) {
-        return {
-          ...q,
-          question_text: q.revised_question_text,
-          compliance_status: "준수",
-          revised_question_text: null,
-          compliance_reason: null
-        } as any;
-      }
-      return q;
+      if (q.id !== id) return q;
+      // DB에 저장된 권장 질문 우선, 없으면 실시간 키워드 검사 결과 사용
+      const liveCheck = localQuickCheck(q.question_text);
+      const replacementText = q.revised_question_text || liveCheck.revised;
+      if (!replacementText) return q;
+      return {
+        ...q,
+        question_text: replacementText,
+        compliance_status: "준수",
+        revised_question_text: null,
+        compliance_reason: null
+      } as any;
     }));
   };
 
