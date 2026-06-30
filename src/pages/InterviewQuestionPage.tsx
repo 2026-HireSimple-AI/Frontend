@@ -274,55 +274,105 @@ export default function InterviewQuestionPage() {
     }
   };
 
-  // PDF 저장
-  const handleSaveQuestionList = () => {
-    if (questions.length === 0) return;
+  // PDF 저장 — 모든 지원자 일괄 출력
+  const handleSaveQuestionList = async () => {
+    if (applicants.length === 0) return;
 
-    // 인쇄용 스타일 추가
     const style = document.createElement("style");
     style.id = "pdf-print-style";
     style.innerHTML = `
       @media print {
         body * { visibility: hidden !important; }
         #pdf-print-area, #pdf-print-area * { visibility: visible !important; }
-        #pdf-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; }
+        #pdf-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+        .pdf-applicant-block { page-break-after: always; padding: 32px; box-sizing: border-box; }
+        .pdf-applicant-block:last-child { page-break-after: avoid; }
       }
     `;
     document.head.appendChild(style);
 
-    // 인쇄 영역 생성
+    // 모든 지원자 질문 + 이력서 요약 병렬 조회
+    const allData = await Promise.all(
+      applicants.map(async (a) => {
+        const [qs, detail] = await Promise.all([
+          getInterviewQuestions(a.id),
+          getApplicantDetail(a.id).catch(() => null)
+        ]);
+        return { applicant: a, questions: qs, detail };
+      })
+    );
+
     const printArea = document.createElement("div");
     printArea.id = "pdf-print-area";
     printArea.style.fontFamily = "sans-serif";
-    printArea.innerHTML = `
-      <h2 style="font-size:18px;font-weight:bold;margin-bottom:4px;">면접 질문지</h2>
-      <p style="font-size:12px;color:#666;margin-bottom:20px;">${jobPostingTitle} · 생성일: ${generatedAt}</p>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead>
-          <tr style="background:#f1f5f9;">
-            <th style="padding:8px;border:1px solid #e2e8f0;width:40px;">번호</th>
-            <th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">질문</th>
-            <th style="padding:8px;border:1px solid #e2e8f0;width:70px;">유형</th>
-            <th style="padding:8px;border:1px solid #e2e8f0;width:70px;">검수</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${questions.map((q, i) => `
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")}`;
+
+    const totalApplicants = allData.length;
+
+    printArea.innerHTML = allData.map(({ applicant, questions: qs, detail }, pageIdx) => {
+      const name = applicant.real_name || applicant.masked_code || `지원자 ${pageIdx + 1}`;
+      const header = (title: string, pageNum: number) => `
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px;">
+          <div>
+            <h2 style="font-size:18px;font-weight:bold;margin:0 0 2px;">${name} — ${title}</h2>
+            <p style="font-size:11px;color:#666;margin:0;">${jobPostingTitle} · ${dateStr}</p>
+          </div>
+          <p style="font-size:10px;color:#aaa;margin:0;">지원자 ${pageIdx + 1} / ${totalApplicants} · ${pageNum}p</p>
+        </div>
+        <hr style="border:none;border-top:2px solid #1e40af;margin-bottom:16px;" />`;
+
+      // 1페이지: 면접 질문
+      const rows = qs.length > 0
+        ? qs.map((q, i) => `
             <tr>
-              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${i + 1}</td>
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;width:36px;">${i + 1}</td>
               <td style="padding:8px;border:1px solid #e2e8f0;">${q.question_text}</td>
-              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${q.question_type}</td>
-              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;">${q.compliance_status}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;width:72px;">${q.question_type}</td>
+              <td style="padding:8px;border:1px solid #e2e8f0;text-align:center;width:56px;">${q.compliance_status}</td>
+            </tr>`).join("")
+        : `<tr><td colspan="4" style="padding:16px;text-align:center;color:#999;border:1px solid #e2e8f0;">생성된 질문 없음</td></tr>`;
+
+      const questionPage = `
+        <div class="pdf-applicant-block">
+          ${header("면접 질문지", 1)}
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:8px;border:1px solid #e2e8f0;">번호</th>
+                <th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">질문</th>
+                <th style="padding:8px;border:1px solid #e2e8f0;">유형</th>
+                <th style="padding:8px;border:1px solid #e2e8f0;">검수</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      // 2페이지: 이력서 요약
+      const summary = detail?.resume_summary;
+      const summarySection = (title: string, content: string) => content ? `
+        <div style="margin-bottom:20px;">
+          <h4 style="font-size:13px;font-weight:bold;color:#1e40af;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0;">${title}</h4>
+          <p style="font-size:12px;color:#374151;line-height:1.7;margin:0;white-space:pre-line;">${content}</p>
+        </div>` : "";
+
+      const resumePage = `
+        <div class="pdf-applicant-block">
+          ${header("이력서 요약", 2)}
+          ${summary ? `
+            ${summarySection("📋 경력 요약", summary.career_summary)}
+            ${summarySection("🚀 주요 프로젝트", summary.project_summary)}
+            ${summarySection("🛠 핵심 보유기술", summary.skill_summary)}
+          ` : `<p style="text-align:center;color:#999;font-size:13px;padding:40px 0;">이력서 요약 정보가 없습니다.</p>`}
+        </div>`;
+
+      return questionPage + resumePage;
+    }).join("");
+
     document.body.appendChild(printArea);
-
     window.print();
-
-    // 인쇄 후 정리
     document.body.removeChild(printArea);
     document.head.removeChild(style);
   };
