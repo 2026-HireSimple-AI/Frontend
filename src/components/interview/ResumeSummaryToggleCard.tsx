@@ -34,7 +34,7 @@ export default function ResumeSummaryToggleCard({
           </div>
           <div className="flex flex-col text-left">
             <span className="text-sm font-bold text-slate-800 leading-tight">
-              {selectedApplicant.masked_code || "APPLICANT_001"}
+              {selectedApplicant.real_name || "—"}
             </span>
             <span className="text-[11px] text-slate-400 font-medium mt-0.5">
               {selectedApplicant.career ? `경력 ${selectedApplicant.career}` : "지원자"}

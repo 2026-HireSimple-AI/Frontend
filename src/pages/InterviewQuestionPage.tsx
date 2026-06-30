@@ -417,7 +417,7 @@ export default function InterviewQuestionPage() {
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-slate-800 truncate leading-tight">
-                      {selectedApplicant?.masked_code || "—"}
+                      {selectedApplicant?.real_name || "—"}
                     </span>
                     <span className="text-[11px] text-slate-400 font-medium mt-0.5">
                       {selectedApplicant?.career ? `경력 ${selectedApplicant.career}` : "지원자"}

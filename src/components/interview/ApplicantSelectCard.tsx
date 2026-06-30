@@ -1,7 +1,7 @@
 import React from "react";
 
 interface ApplicantSelectCardProps {
-  applicants: Array<{ id: number; masked_code: string; career: string }>;
+  applicants: Array<{ id: number; masked_code: string; real_name?: string; career: string }>;
   selectedApplicantId: number | null;
   onSelectApplicant: (id: number) => void;
 }
@@ -27,7 +27,7 @@ export default function ApplicantSelectCard({
           )}
           {applicants.map((app) => (
             <option key={app.id} value={app.id}>
-              {app.masked_code}
+              {app.real_name || app.masked_code}
             </option>
           ))}
         </select>
