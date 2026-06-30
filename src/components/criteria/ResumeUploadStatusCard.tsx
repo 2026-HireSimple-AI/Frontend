@@ -11,7 +11,7 @@ interface UploadedFile {
 interface ResumeUploadStatusCardProps {
   uploadedFiles: UploadedFile[];
   onUploadFiles: (files: File[]) => void;
-  onDeleteFile?: (id: number) => void;
+  onDeleteFile?: (id: number) => void | Promise<void>;
   uploadStatusMessage?: string | null;
   isUploading: boolean;
 }
@@ -25,6 +25,22 @@ export default function ResumeUploadStatusCard({
 }: ResumeUploadStatusCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+
+  const handleDeleteClick = async (id: number) => {
+    if (!onDeleteFile || deletingIds.has(id)) return;
+
+    setDeletingIds(prev => new Set(prev).add(id));
+    try {
+      await onDeleteFile(id);
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -52,6 +68,8 @@ export default function ResumeUploadStatusCard({
       const files = Array.from(e.target.files) as File[];
       onUploadFiles(files);
     }
+    // 같은 파일을 다시 선택해도 onChange가 발생하도록 값 리셋
+    e.target.value = "";
   };
 
   // 상태 배지 매퍼
@@ -188,12 +206,17 @@ export default function ResumeUploadStatusCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDeleteFile(file.id);
+                        handleDeleteClick(file.id);
                       }}
-                      className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded cursor-pointer transition-colors"
+                      disabled={deletingIds.has(file.id)}
+                      className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       title="지우기"
                     >
-                      <Trash2 size={12} />
+                      {deletingIds.has(file.id) ? (
+                        <RefreshCw size={12} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={12} />
+                      )}
                     </button>
                   )}
                 </div>
