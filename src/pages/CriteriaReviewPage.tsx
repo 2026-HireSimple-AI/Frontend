@@ -4,7 +4,7 @@
  * - 새로운 이력서를 추가 업로드할 수 있으며, 최종적으로 '분석 진행하기'를 눌러 STEP 3으로 안전하게 이동합니다.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import WorkflowHeader from "../components/workflow/WorkflowHeader";
@@ -20,8 +20,8 @@ import BottomNotice from "../components/criteria/BottomNotice";
 import NextStepButton from "../components/criteria/NextStepButton";
 
 import { getJobPosting, formatJobPosting, updateJobPostingTitle  } from "../api/jobPostingApi";
-import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion } from "../api/criteriaApi";
-import { uploadResumes } from "../api/resumeApi";
+import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion, saveCriteria } from "../api/criteriaApi";
+import { uploadResumes, getResumes, deleteResume } from "../api/resumeApi";
 
 import { Sliders, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "motion/react";
@@ -35,10 +35,16 @@ interface FormattedPosting {
 
 interface UploadedFile {
   id: number;
+  applicantId?: number;
   name: string;
   size: string;
   status: string;
 }
+
+// 이력서 문서는 보통 수십~수백 KB라 KB 단위로 표시
+const formatFileSize = (bytes: number): string => {
+  return (bytes / 1024).toFixed(0) + " KB";
+};
 
 export default function CriteriaReviewPage() {
   const { jobPostingId } = useParams<{ jobPostingId: string }>();
@@ -113,19 +119,26 @@ export default function CriteriaReviewPage() {
         const fetchedCriteria = await getEvaluationCriteria(parsedJobId);
         setCriteriaList(fetchedCriteria.type_criteria || []);
 
-        // 업로드 파일 데이터 기원 로딩
-        const cachedResumes = localStorage.getItem(`uploaded_resumes_${parsedJobId}`);
-        if (cachedResumes) {
-          const parsedRes = JSON.parse(cachedResumes);
-          const mapped = parsedRes.files?.map((f: any) => ({
-            id: f.resume_file_id || Math.floor(Math.random() * 9000),
+        // 업로드 파일 데이터는 캐시가 아니라 서버에서 직접 조회
+        try {
+          const resumesRes = await getResumes(parsedJobId);
+          const mapped = resumesRes.files?.map((f: any) => ({
+            id: f.resume_file_id,
+            applicantId: f.applicant_id,
             name: f.original_filename,
-            size: "1.1 MB",
-            status: f.processing_status === "uploaded" ? "마스킹 완료" : "처리 중"
+            size: f.file_size_bytes
+              ? formatFileSize(f.file_size_bytes)
+              : "-",
+            status:
+              f.processing_status === "masked" || f.processing_status === "uploaded"
+                ? "마스킹 완료"
+                : f.processing_status === "needs_review"
+                ? "검토 필요"
+                : "처리 중",
           })) || [];
           setUploadedFiles(mapped);
-        } else {
-          // 이력서 없음의 경우 디폴트로 빈 상태 지정하여 아무 파일도 없도록 보정
+        } catch {
+          // 조회 실패 시에는 빈 상태로 둔다 (이전 세션의 가짜 캐시를 보여주지 않음)
           setUploadedFiles([]);
         }
 
@@ -221,107 +234,114 @@ export default function CriteriaReviewPage() {
     }
   };
 
-  // 다중 이력서 업로드 수행
+  // 업로드 중인 파일 각각의 AbortController 추적 (임시 id -> controller)
+  const uploadControllersRef = useRef<Map<number, AbortController>>(new Map());
+
+  // 파일 1개를 업로드하는 단위 작업 (서로 독립적으로 진행/취소 가능)
+  const uploadSingleFile = async (file: File, tempId: number) => {
+    const controller = new AbortController();
+    uploadControllersRef.current.set(tempId, controller);
+
+    try {
+      const res = await uploadResumes(parsedJobId, [file], controller.signal);
+      const uploaded = res.files[0];
+
+      if (!uploaded) {
+        throw new Error("업로드 응답이 비어 있습니다.");
+      }
+
+      const completedFile: UploadedFile = {
+        id: uploaded.resume_file_id,
+        applicantId: uploaded.applicant_id,
+        name: uploaded.original_filename,
+        size: uploaded.file_size_bytes
+          ? formatFileSize(uploaded.file_size_bytes)
+          : "-",
+        status:
+          uploaded.processing_status === "masked" || uploaded.processing_status === "uploaded"
+            ? "마스킹 완료"
+            : uploaded.processing_status === "needs_review"
+            ? "검토 필요"
+            : "처리 중",
+      };
+
+      setUploadedFiles(prev => {
+        const filtered = prev.filter(f => f.id !== tempId);
+        return [...filtered, completedFile];
+      });
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        // 사용자가 직접 취소한 경우: 해당 항목은 취소 시점에 이미 화면에서 제거됨
+      } else {
+        setUploadError(`'${file.name}' 업로드 중 통신 장해가 발생했습니다.`);
+        setUploadedFiles(prev => prev.filter(f => f.id !== tempId));
+      }
+    } finally {
+      uploadControllersRef.current.delete(tempId);
+    }
+  };
+
+  // 다중 이력서 업로드 수행 (파일별로 독립적으로 처리)
   const handleUploadFiles = async (files: File[]) => {
     if (files.length === 0) return;
     setIsUploading(true);
     setUploadError(null);
 
-    // 가상 이력서 목록에 "업로드 중" 상태로 먼저 표시
+    const base = Date.now();
+
+    // 가상 이력서 목록에 "업로드 중" 상태로 먼저 표시 (파일마다 고유 임시 id)
     const pendingFiles: UploadedFile[] = files.map((file, index) => ({
-      id: Date.now() + index,
+      id: base + index,
       name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(1) + " MB",
+      size: formatFileSize(file.size),
       status: "업로드 중"
     }));
 
     setUploadedFiles(prev => [...prev, ...pendingFiles]);
 
     try {
-      const res = await uploadResumes(parsedJobId, files);
-      
-      // 실제 리턴된 정보로 패치 업데이트
-      const completedFiles: UploadedFile[] = res.files.map((file, index) => ({
-        id: file.resume_file_id || (Date.now() + index),
-        name: file.original_filename,
-        size: "1.3 MB",
-        status: "마스킹 완료"
-      }));
-
-      // 가상 등록된 '업로드 중' 파일을 지우고 실제 완료 파일들을 추가
-      setUploadedFiles(prev => {
-        const filtered = prev.filter(f => f.status !== "업로드 중");
-        const nextList = [...filtered, ...completedFiles];
-        
-        // 로컬 업데이트
-        const updatedResponse = {
-          uploaded_count: nextList.length,
-          files: nextList.map(f => ({
-            resume_file_id: f.id,
-            applicant_id: f.id + 100,
-            original_filename: f.name,
-            processing_status: f.status === "마스킹 완료" ? "uploaded" : "processing"
-          }))
-        };
-        localStorage.setItem(`uploaded_resumes_${parsedJobId}`, JSON.stringify(updatedResponse));
-        
-        return nextList;
-      });
-
-    } catch (err) {
-      setUploadError("이력서 업로드 분석 실행 과정에서 통신 장해가 발발했습니다.");
-      // 실패 시 업로드 상태 지우기
-      setUploadedFiles(prev => prev.filter(f => f.status !== "업로드 중"));
+      await Promise.all(
+        files.map((file, index) => uploadSingleFile(file, base + index))
+      );
     } finally {
       setIsUploading(false);
     }
   };
 
-  // 업로드 파일 개별 소거 지우기
-  const handleDeleteUploadedFile = (id: number) => {
-    const nextList = uploadedFiles.filter(f => f.id !== id);
-    setUploadedFiles(nextList);
+  // 업로드 파일 개별 소거 지우기 (서버에도 삭제 요청)
+  const handleDeleteUploadedFile = async (id: number) => {
+    const target = uploadedFiles.find(f => f.id === id);
+    if (!target) return;
 
-    const updatedResponse = {
-      uploaded_count: nextList.length,
-      files: nextList.map(f => ({
-        resume_file_id: f.id,
-        applicant_id: f.id + 100,
-        original_filename: f.name,
-        processing_status: f.status === "마스킹 완료" ? "uploaded" : "processing"
-      }))
-    };
-    localStorage.setItem(`uploaded_resumes_${parsedJobId}`, JSON.stringify(updatedResponse));
+    // "업로드 중"인 항목은 아직 서버에 실제 resume_file_id가 없으므로
+    // (id가 클라이언트에서 임시로 만든 값) 해당 파일의 요청만 취소하고
+    // 그 항목만 로컬에서 제거한다. 다른 동시 업로드 항목에는 영향 없음.
+    if (target.status === "업로드 중") {
+      const controller = uploadControllersRef.current.get(id);
+      controller?.abort();
+      setUploadedFiles(prev => prev.filter(f => f.id !== id));
+      return;
+    }
+
+    // 낙관적으로 먼저 화면에서 제거
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+
+    try {
+      await deleteResume(id);
+    } catch (err) {
+      // 서버 삭제 실패 시 화면에 다시 복구하고 에러 표시
+      setUploadedFiles(prev => [...prev, target]);
+      setUploadError("이력서 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    }
   };
 
   // 모달 에디터로부터 정밀 저장 요청 수신
-  const handleSaveCriteria = async (updatedList: TypeCriterion[]) => {
-    try {
-      // 1. 상태 업데이트
-      setCriteriaList(updatedList);
-      setIsEditModalOpen(false);
-
-      // 2. 전체 백그라운드 스토리지 업데이트
-      localStorage.setItem(`criteria_${parsedJobId}`, JSON.stringify({ type_criteria: updatedList }));
-
-      // 3. 개 개별 가중치 PATCH 전송 (실제 서버 동기화, 실패해도 로컬은 유지)
-      for (const item of updatedList) {
-        await updateTypeCriterion(item.id, { 
-          criterion_type: item.criterion_type, 
-          type_weight: item.type_weight 
-        });
-        for (const det of item.detail_criteria) {
-          await updateDetailCriterion(det.id, {
-            detail: det.detail,
-            weight: det.weight
-          });
-        }
-      }
-
-    } catch (e) {
-      console.warn("일부 패치 API 동기화가 이루어지지 못했으나, 조율된 데이터는 안전하게 로컬에 백업 보존됩니다.");
-    }
-  };
+const handleSaveCriteria = async (updatedList: TypeCriterion[]) => {
+  const result = await saveCriteria(parsedJobId, updatedList);
+  setCriteriaList(result.type_criteria);
+  localStorage.setItem(`criteria_${parsedJobId}`, JSON.stringify(result));
+  setIsEditModalOpen(false);
+};
 
   // 다음 STEP 3. 지원자 분석 결과 화면 이동
   const handleGoNext = async () => {
@@ -333,27 +353,19 @@ export default function CriteriaReviewPage() {
     setIsNextLoading(true);
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
-      
-      // localStorage에서 방금 업로드된 파일의 applicant_id 가져오기
-      const cachedResumes = localStorage.getItem(`uploaded_resumes_${parsedJobId}`);
-      if (cachedResumes) {
-          const parsedRes = JSON.parse(cachedResumes);
-          const files = Array.isArray(parsedRes) ? parsedRes : (parsedRes.files || []);
-          
-          // 업로드된 파일별로 개별 분석 호출
-          for (const file of files) {
-              const applicantId = file.applicant_id;
-              if (applicantId) {
-                  await fetch(`${baseUrl}/applicants/${applicantId}/analyze`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                  });
-              }
-          }
+
+      // 업로드된 파일별로 개별 분석 호출 (state에 보관된 applicantId 사용)
+      for (const file of uploadedFiles) {
+        if (file.applicantId) {
+          await fetch(`${baseUrl}/applicants/${file.applicantId}/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+        }
       }
-  } catch (err) {
+    } catch (err) {
       console.warn("분석 API 호출 실패:", err);
-  }
+    }
     setTimeout(() => {
       setIsNextLoading(false);
       navigate(`/analysis/${parsedJobId}/applicants`);

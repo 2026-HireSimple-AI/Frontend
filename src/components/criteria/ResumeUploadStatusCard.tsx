@@ -11,7 +11,7 @@ interface UploadedFile {
 interface ResumeUploadStatusCardProps {
   uploadedFiles: UploadedFile[];
   onUploadFiles: (files: File[]) => void;
-  onDeleteFile?: (id: number) => void;
+  onDeleteFile?: (id: number) => void | Promise<void>;
   uploadStatusMessage?: string | null;
   isUploading: boolean;
 }
@@ -25,6 +25,22 @@ export default function ResumeUploadStatusCard({
 }: ResumeUploadStatusCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+
+  const handleDeleteClick = async (id: number) => {
+    if (!onDeleteFile || deletingIds.has(id)) return;
+
+    setDeletingIds(prev => new Set(prev).add(id));
+    try {
+      await onDeleteFile(id);
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -52,6 +68,8 @@ export default function ResumeUploadStatusCard({
       const files = Array.from(e.target.files) as File[];
       onUploadFiles(files);
     }
+    // 같은 파일을 다시 선택해도 onChange가 발생하도록 값 리셋
+    e.target.value = "";
   };
 
   // 상태 배지 매퍼
@@ -93,7 +111,7 @@ export default function ResumeUploadStatusCard({
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-4 h-full">
+    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-4 h-[420px]">
       {/* 타이틀 및 가이드라인 */}
       <div>
         <h3 className="text-sm font-bold text-[#1C1F26]">이력서 업로드</h3>
@@ -115,7 +133,7 @@ export default function ResumeUploadStatusCard({
       )}
 
       {/* 실 분할 레이아웃: 업로드 박스 + 업로드 리스트 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-hidden">
         {/* 드래그앤드랍 박스 */}
         <div
           onDragEnter={handleDrag}
@@ -127,7 +145,7 @@ export default function ResumeUploadStatusCard({
             isDragActive 
               ? "border-[#00194B] bg-[#EEF3FA]/30" 
               : "border-[#D4D9E1] hover:border-[#00194B]/50 hover:bg-[#F8FAFC]"
-          } ${isUploading ? "pointer-events-none opacity-60" : ""}`}
+      } ${isUploading ? "pointer-events-none opacity-60" : ""} h-full min-h-0`}
         >
           <input
             type="file"
@@ -160,7 +178,7 @@ export default function ResumeUploadStatusCard({
         </div>
 
         {/* 업로드 파일 결과 리스트 (우측 배치) */}
-        <div className="flex flex-col gap-2 max-h-[240px] md:max-h-full overflow-y-auto pr-1 flex-1">
+    <div className="flex flex-col gap-2 overflow-y-auto pr-1 max-h-[265px] md:max-h-full h-full min-h-0">
           {uploadedFiles && uploadedFiles.length > 0 ? (
             uploadedFiles.map((file) => (
               <div
@@ -188,12 +206,17 @@ export default function ResumeUploadStatusCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDeleteFile(file.id);
+                        handleDeleteClick(file.id);
                       }}
-                      className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded cursor-pointer transition-colors"
+                      disabled={deletingIds.has(file.id)}
+                      className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       title="지우기"
                     >
-                      <Trash2 size={12} />
+                      {deletingIds.has(file.id) ? (
+                        <RefreshCw size={12} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={12} />
+                      )}
                     </button>
                   )}
                 </div>
