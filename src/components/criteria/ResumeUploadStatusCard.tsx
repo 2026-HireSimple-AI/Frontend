@@ -93,7 +93,7 @@ export default function ResumeUploadStatusCard({
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-4 h-full">
+    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-4 h-[420px]">
       {/* 타이틀 및 가이드라인 */}
       <div>
         <h3 className="text-sm font-bold text-[#1C1F26]">이력서 업로드</h3>
@@ -115,7 +115,7 @@ export default function ResumeUploadStatusCard({
       )}
 
       {/* 실 분할 레이아웃: 업로드 박스 + 업로드 리스트 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-hidden">
         {/* 드래그앤드랍 박스 */}
         <div
           onDragEnter={handleDrag}
@@ -127,7 +127,7 @@ export default function ResumeUploadStatusCard({
             isDragActive 
               ? "border-[#00194B] bg-[#EEF3FA]/30" 
               : "border-[#D4D9E1] hover:border-[#00194B]/50 hover:bg-[#F8FAFC]"
-          } ${isUploading ? "pointer-events-none opacity-60" : ""}`}
+      } ${isUploading ? "pointer-events-none opacity-60" : ""} h-full min-h-0`}
         >
           <input
             type="file"
@@ -160,7 +160,7 @@ export default function ResumeUploadStatusCard({
         </div>
 
         {/* 업로드 파일 결과 리스트 (우측 배치) */}
-        <div className="flex flex-col gap-2 max-h-[240px] md:max-h-full overflow-y-auto pr-1 flex-1">
+    <div className="flex flex-col gap-2 overflow-y-auto pr-1 max-h-[265px] md:max-h-full h-full min-h-0">
           {uploadedFiles && uploadedFiles.length > 0 ? (
             uploadedFiles.map((file) => (
               <div

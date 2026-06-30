@@ -38,7 +38,7 @@ export default function JobPostingAnalysisResultCard({
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-5 h-full">
+    <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-5 h-[420px]">
       {/* 카드 상부 헤더 */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -66,10 +66,10 @@ export default function JobPostingAnalysisResultCard({
       )}
 
       {/* 분석 카테고리 본문 리스트 */}
-      <div className="flex flex-col gap-4 min-h-[140px] flex-1">
+      <div className="flex flex-col gap-4 min-h-[140px] flex-1 overflow-hidden">
         {isRefreshing ? (
           // 다시 추출하는 동안에 보여주는 Skeleton UI 로딩 효과
-          <div className="flex flex-col gap-4 py-2 h-full">
+          <div className="flex flex-col gap-4 py-2 h-full overflow-y-auto">
             {[1, 2, 3].map((n) => (
               <div key={n} className="flex items-center gap-4 border-b border-[#F6F8FC]/60 pb-3 last:border-0 last:pb-0 animate-pulse">
                 <div className="w-[90px] h-[32px] bg-[#E2E8F0] rounded-lg flex-shrink-0" />
@@ -85,22 +85,24 @@ export default function JobPostingAnalysisResultCard({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col gap-4 h-full"
+            className="flex flex-col gap-4 h-full overflow-y-auto pr-1"
           >
             {formattedPostings && formattedPostings.length > 0 ? (
               formattedPostings.map((post, idx) => (
-                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border-b border-[#F6F8FC] pb-3 last:border-0 last:pb-0">
+                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border-b border-[#F6F8FC] pb-3 last:border-0 last:pb-0 flex-shrink-0">
                   {/* 카테고리 태그 */}
                   <div className={`w-[90px] h-[32px] self-start flex items-center justify-center rounded-lg text-xs font-bold flex-shrink-0 ${getBadgeStyle(post.category)}`}>
                     {post.category}
                   </div>
                   
-                  {/* 내용 설명 */}
-                  <ul className="text-xs text-[#344054] font-medium leading-relaxed flex-1">
+                  {/* 내용 설명 - 개별 스크롤 추가 */}
+                  <div className="flex-1 max-h-[72px] overflow-y-auto pr-1">
+                    <ul className="text-xs text-[#344054] font-medium leading-relaxed">
                   {(Array.isArray(post.content) ? post.content : [post.content]).map((item, index) => (
                     <li key={index}>{item}</li>
                   ))}
-                </ul>
+                    </ul>
+                  </div>
                 </div>
               ))
             ) : (
