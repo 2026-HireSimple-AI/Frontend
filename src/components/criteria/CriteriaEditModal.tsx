@@ -53,12 +53,46 @@ export default function CriteriaEditModal({
     setErrorMessage(null);
   };
 
-  // 대분류 가중치 수정 처리
+  // 대분류 가중치 수정 처리 (하위 세부 항목에 비례 배분)
   const handleChangeCategoryWeight = (typeId: number, val: number) => {
     setDraftCriteriaList(prev =>
       prev.map(cat => {
         if (cat.id === typeId) {
+          const detailCount = cat.detail_criteria.length;
+          if (detailCount === 0) {
           return { ...cat, type_weight: val };
+          }
+
+          const currentSum = cat.detail_criteria.reduce((sum, d) => sum + (d.weight || 0), 0);
+
+          let updatedDetails: DetailCriterion[];
+          if (currentSum === 0) {
+            // 기존 합이 0인 경우 균등 분배
+            const base = Math.floor(val / detailCount);
+            let remainder = val % detailCount;
+            updatedDetails = cat.detail_criteria.map((det, idx) => {
+              const extra = idx < remainder ? 1 : 0;
+              return { ...det, weight: base + extra };
+            });
+          } else {
+            // 비례 배분 계산
+            let allocatedSum = 0;
+            const tempDetails = cat.detail_criteria.map((det) => {
+              const portion = (det.weight / currentSum) * val;
+              const rounded = Math.round(portion);
+              allocatedSum += rounded;
+              return { ...det, weight: rounded };
+            });
+
+            // 반올림 누적으로 인한 차이 보정
+            const diff = val - allocatedSum;
+            if (diff !== 0 && tempDetails.length > 0) {
+              tempDetails[0].weight = Math.max(0, tempDetails[0].weight + diff);
+            }
+            updatedDetails = tempDetails;
+          }
+
+          return { ...cat, detail_criteria: updatedDetails, type_weight: val };
         }
         return cat;
       })
@@ -83,7 +117,7 @@ export default function CriteriaEditModal({
     );
   };
 
-  // 세부 지표 개별 가중치 입력 처리
+  // 세부 지표 개별 가중치 입력 처리 (대분류 가중치를 이들의 합으로 자동 업데이트)
   const handleChangeDetailWeight = (typeId: number, detailId: number, val: number) => {
     setDraftCriteriaList(prev =>
       prev.map(cat => {
@@ -94,14 +128,15 @@ export default function CriteriaEditModal({
             }
             return det;
           });
-          return { ...cat, detail_criteria: updatedDetails };
+          const sumWeight = updatedDetails.reduce((sum, det) => sum + (det.weight || 0), 0);
+          return { ...cat, detail_criteria: updatedDetails, type_weight: sumWeight };
         }
         return cat;
       })
     );
   };
 
-  // 세부 지표 추가 처리
+  // 세부 지표 추가 처리 (합산 보존 및 디폴트 추가 가중치 반영)
   const handleAddDetail = (typeId: number) => {
     setDraftCriteriaList(prev =>
       prev.map(cat => {
@@ -109,10 +144,8 @@ export default function CriteriaEditModal({
           const randomId = Math.floor(Math.random() * 800000) + 100000;
           const currentCount = cat.detail_criteria.length;
           
-          // 디폴트 배정 가중치는 적정 분할치로 제공
-          const defaultNewWeight = currentCount > 0 
-            ? Math.max(1, Math.floor(cat.type_weight / (currentCount + 1))) 
-            : 10;
+          // 디폴트 추가 가중치
+          const defaultNewWeight = 10;
 
           const newDetail: DetailCriterion = {
             id: randomId,
@@ -120,9 +153,13 @@ export default function CriteriaEditModal({
             weight: defaultNewWeight
           };
 
+          const updatedDetails = [...cat.detail_criteria, newDetail];
+          const sumWeight = updatedDetails.reduce((sum, det) => sum + (det.weight || 0), 0);
+
           return {
             ...cat,
-            detail_criteria: [...cat.detail_criteria, newDetail]
+            detail_criteria: updatedDetails,
+            type_weight: sumWeight
           };
         }
         return cat;
@@ -130,13 +167,14 @@ export default function CriteriaEditModal({
     );
   };
 
-  // 세부 지표 삭제 처리
+  // 세부 지표 삭제 처리 (합산 갱신)
   const handleDeleteDetail = (typeId: number, detailId: number) => {
     setDraftCriteriaList(prev =>
       prev.map(cat => {
         if (cat.id === typeId) {
           const filteredDetails = cat.detail_criteria.filter(det => det.id !== detailId);
-          return { ...cat, detail_criteria: filteredDetails };
+          const sumWeight = filteredDetails.reduce((sum, det) => sum + (det.weight || 0), 0);
+          return { ...cat, detail_criteria: filteredDetails, type_weight: sumWeight };
         }
         return cat;
       })
