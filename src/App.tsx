@@ -10,8 +10,9 @@
  *   6. /login, /signup - 로컬 세션 인증기
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { refreshSessionExpiry } from "./api/authApi";
 import PrivateRoute from "./components/layout/PrivateRoute";
 
 // 페이지 컴포넌트 임포트
@@ -25,6 +26,13 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 
 export default function App() {
+  useEffect(() => {
+    // 클릭·키 입력 시 세션 만료 시각 갱신 (15분 연장)
+    const events = ["click", "keydown"] as const;
+    events.forEach(e => window.addEventListener(e, refreshSessionExpiry));
+    return () => events.forEach(e => window.removeEventListener(e, refreshSessionExpiry));
+  }, []);
+
   return (
     <BrowserRouter>
        <Routes>
