@@ -1,9 +1,39 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Plus, Edit3, Trash2, ArrowRight, CheckCircle, ShieldAlert, AlertTriangle } from "lucide-react";
-import { InterviewQuestion, deleteInterviewQuestion, checkQuestionCompliance } from "../../api/interviewQuestionApi";
+import { InterviewQuestion, deleteInterviewQuestion } from "../../api/interviewQuestionApi";
 import QuestionTypeTabs from "./QuestionTypeTabs";
 import EditableQuestionTable from "./EditableQuestionTable";
 import QuestionEditModalFooter from "./QuestionEditModalFooter";
+
+function localQuickCheck(text: string): {
+  status: "준수" | "경고" | "심각";
+  revised: string | null;
+  reason: string | null;
+} {
+  const t = text.toLowerCase();
+  const hardViolations = [
+    "결혼", "혼인", "출산", "임신", "육아", "애인", "남자친구", "여자친구",
+    "파트너", "연애", "나이", "고향", "출신지", "부모님", "가족", "형제",
+    "자매", "종교", "정치"
+  ];
+  const softViolations = ["야근", "지방 발령", "주말 근무", "군복무"];
+
+  if (hardViolations.some(kw => t.includes(kw))) {
+    return {
+      status: "심각",
+      revised: "직무 수행 시 협력적으로 소통하고 의견을 조율해온 본인만의 커뮤니케이션 노하우가 있다면 설명해주세요.",
+      reason: "채용절차법 제4조의3 위반 — 개인 신상정보(혼인·가족·나이·출신지·종교 등) 관련 질문은 면접에서 수집이 금지되어 있습니다."
+    };
+  }
+  if (softViolations.some(kw => t.includes(kw))) {
+    return {
+      status: "경고",
+      revised: null,
+      reason: "개인 상황(육아·성별·거주지 등)을 간접적으로 유추할 수 있어 주의가 필요합니다."
+    };
+  }
+  return { status: "준수", revised: null, reason: null };
+}
 
 interface QuestionEditModalProps {
   isOpen: boolean;
@@ -25,38 +55,28 @@ export default function QuestionEditModal({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 2. Load questions into draft on modal open + LLM 검수 실행
+  // 2. Load questions into draft on modal open + 하드코딩 검수
   useEffect(() => {
     if (!isOpen) return;
 
-    const cloned = questions.map(q => ({
-      ...q,
-      question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type
-    }));
+    const cloned = questions.map(q => {
+      const normalized = { ...q, question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type };
+      const check = localQuickCheck(q.question_text);
+      if (check.status !== "준수") {
+        return {
+          ...normalized,
+          compliance_status: check.status as any,
+          revised_question_text: q.revised_question_text || check.revised,
+          compliance_reason: (q as any).compliance_reason || check.reason
+        } as any;
+      }
+      return { ...normalized, compliance_status: "준수" as any, revised_question_text: null };
+    });
     setDraftQuestions(cloned);
     setActiveEditingId(null);
     setActiveType("전체");
     setErrorMessage("");
     setIsSaving(false);
-
-    // 비동기로 각 질문 LLM 검수 (DB compliance_status가 경고/심각인 것만)
-    cloned.forEach(async (q) => {
-      if (q.compliance_status === "경고" || q.compliance_status === "심각" || !(q as any).revised_question_text) {
-        const result = await checkQuestionCompliance(q.question_text);
-        setDraftQuestions(prev => prev.map(dq => {
-          if (dq.id !== q.id) return dq;
-          if (result.compliance_status === "준수") {
-            return { ...dq, compliance_status: "준수" as any, revised_question_text: null };
-          }
-          return {
-            ...dq,
-            compliance_status: result.compliance_status as any,
-            revised_question_text: dq.revised_question_text || result.revised_question_text,
-            compliance_reason: (dq as any).compliance_reason || result.compliance_reason
-          } as any;
-        }));
-      }
-    });
   }, [isOpen, questions]);
 
   if (!isOpen) return null;
@@ -82,22 +102,16 @@ export default function QuestionEditModal({
   });
 
   // 5. Change Handlers
-  const handleChangeQuestionText = async (id: number, newText: string) => {
-    // 즉시 텍스트 반영 (UX)
-    setDraftQuestions(prev => prev.map(q =>
-      q.id === id ? { ...q, question_text: newText } : q
-    ));
-
-    // LLM 검수 (비동기)
-    const result = await checkQuestionCompliance(newText);
+  const handleChangeQuestionText = (id: number, newText: string) => {
+    const check = localQuickCheck(newText);
     setDraftQuestions(prev => prev.map(q => {
       if (q.id !== id) return q;
       return {
         ...q,
         question_text: newText,
-        compliance_status: result.compliance_status as any,
-        revised_question_text: result.compliance_status === "준수" ? null : result.revised_question_text,
-        compliance_reason: result.compliance_status === "준수" ? null : result.compliance_reason
+        compliance_status: check.status as any,
+        revised_question_text: check.status === "준수" ? null : check.revised,
+        compliance_reason: check.status === "준수" ? null : check.reason
       } as any;
     }));
   };
