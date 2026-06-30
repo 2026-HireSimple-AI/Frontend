@@ -9,6 +9,7 @@ interface ComparisonSkillTagListProps {
 export default function ComparisonSkillTagList({
   skills = []
 }: ComparisonSkillTagListProps) {
+  const uniqueSkills = [...new Set(skills)]; 
   // 예쁜 배경 컬러 세트 부여
   const getTagColor = (skill: string) => {
     const s = skill.toLowerCase();
@@ -28,7 +29,7 @@ export default function ComparisonSkillTagList({
     <div className={styles.skillTagList} id="comparison-skill-tag-list-wrapper">
       <h4 className={styles.skillTagHeader}>보유 기술 스택 ({skills.length})</h4>
       <div className={styles.skillTagsContainer}>
-        {skills.map((skill) => {
+        {uniqueSkills.map((skill) => {
           const { bg, text } = getTagColor(skill);
           return (
             <span
