@@ -1,43 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { X, Plus, Edit3, Trash2, ArrowRight, CheckCircle, ShieldAlert, AlertTriangle } from "lucide-react";
-import { InterviewQuestion, deleteInterviewQuestion } from "../../api/interviewQuestionApi";
+import { InterviewQuestion, deleteInterviewQuestion, checkQuestionCompliance } from "../../api/interviewQuestionApi";
 import QuestionTypeTabs from "./QuestionTypeTabs";
 import EditableQuestionTable from "./EditableQuestionTable";
 import QuestionEditModalFooter from "./QuestionEditModalFooter";
-
-// 컴포넌트 밖에 정의해야 useEffect에서 참조 가능
-function runLocalComplianceCheck(text: string) {
-  const lower = text.toLowerCase();
-
-  if (lower.includes("마감 기한") || lower.includes("우선순위") || lower.includes("우선 순위") || lower.includes("마감기한")) {
-    return {
-      status: "미준수" as const,
-      revised: "업무상 여러 마감 시한이 겹쳐 충돌이 발생한 시점에, 업무의 우선순위를 어떻게 수치적 또는 이성적으로 판단하여 추진하셨는지 구체적 사례를 들어주세요.",
-      reason: "직원의 개인적인 성향, 습관적 행동, 단순 여가 시간 관리 등을 추측할 수 있는 서술형 질문에 그칠 우려가 있으므로, 업무 역량 및 객관적 리소싱 관점 위주로 다듬어야 직무 연관성을 높이고 왜곡된 선입견을 최소화할 수 있습니다."
-    };
-  }
-
-  if (
-    lower.includes("결혼") ||
-    lower.includes("출산") ||
-    lower.includes("나이") ||
-    lower.includes("가족") ||
-    lower.includes("애인") ||
-    lower.includes("남자친구") ||
-    lower.includes("여자친구") ||
-    lower.includes("부모님") ||
-    lower.includes("종교") ||
-    lower.includes("고향")
-  ) {
-    return {
-      status: "미준수" as const,
-      revised: "우리 직무 수행 시 협력적인 동료들과 함께 원활하게 소통하고 다른 의견들을 수렴하며 시너지를 제고해 온 본인만의 커뮤니케이션 노하우가 있다면 설명해주세요.",
-      reason: "개인 신상정보(나이, 가족관계, 성별, 혼인 여부) 및 직무와 무관한 사적 기호는 채용절차법 상 수집이 엄격히 금지된 항목으로, 자칫 면접관의 주관적이고 차별적인 왜곡이 발생하지 않도록 근본적으로 예방해야 합니다."
-    };
-  }
-
-  return { status: "준수" as const, revised: null, reason: null };
-}
 
 interface QuestionEditModalProps {
   isOpen: boolean;
@@ -59,30 +25,38 @@ export default function QuestionEditModal({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 2. Load questions into draft on modal open
+  // 2. Load questions into draft on modal open + LLM 검수 실행
   useEffect(() => {
-    if (isOpen) {
-      // 모달 열릴 때 법령 위반 질문에 권장 수정안 자동 생성
-      const cloned = questions.map(q => {
-        const normalized = { ...q, question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type };
-        const check = runLocalComplianceCheck(q.question_text);
-        if (check.status === "준수") {
-          // 현재 텍스트가 법령 통과 → DB 상태 무시하고 준수로 표시
-          return { ...normalized, compliance_status: "준수" as any, revised_question_text: null };
-        }
-        // 위반 질문 → 권장 수정안 채우기
-        return {
-          ...normalized,
-          revised_question_text: q.revised_question_text || check.revised,
-          compliance_reason: (q as any).compliance_reason || check.reason
-        } as any;
-      });
-      setDraftQuestions(cloned);
-      setActiveEditingId(null);
-      setActiveType("전체");
-      setErrorMessage("");
-      setIsSaving(false);
-    }
+    if (!isOpen) return;
+
+    const cloned = questions.map(q => ({
+      ...q,
+      question_type: q.question_type === "기술검정" ? "기술검증" : q.question_type
+    }));
+    setDraftQuestions(cloned);
+    setActiveEditingId(null);
+    setActiveType("전체");
+    setErrorMessage("");
+    setIsSaving(false);
+
+    // 비동기로 각 질문 LLM 검수 (DB compliance_status가 경고/심각인 것만)
+    cloned.forEach(async (q) => {
+      if (q.compliance_status === "경고" || q.compliance_status === "심각" || !(q as any).revised_question_text) {
+        const result = await checkQuestionCompliance(q.question_text);
+        setDraftQuestions(prev => prev.map(dq => {
+          if (dq.id !== q.id) return dq;
+          if (result.compliance_status === "준수") {
+            return { ...dq, compliance_status: "준수" as any, revised_question_text: null };
+          }
+          return {
+            ...dq,
+            compliance_status: result.compliance_status as any,
+            revised_question_text: dq.revised_question_text || result.revised_question_text,
+            compliance_reason: (dq as any).compliance_reason || result.compliance_reason
+          } as any;
+        }));
+      }
+    });
   }, [isOpen, questions]);
 
   if (!isOpen) return null;
@@ -108,20 +82,23 @@ export default function QuestionEditModal({
   });
 
   // 5. Change Handlers
-  const handleChangeQuestionText = (id: number, newText: string) => {
-    const compliance = runLocalComplianceCheck(newText);
+  const handleChangeQuestionText = async (id: number, newText: string) => {
+    // 즉시 텍스트 반영 (UX)
+    setDraftQuestions(prev => prev.map(q =>
+      q.id === id ? { ...q, question_text: newText } : q
+    ));
 
+    // LLM 검수 (비동기)
+    const result = await checkQuestionCompliance(newText);
     setDraftQuestions(prev => prev.map(q => {
-      if (q.id === id) {
-        return {
-          ...q,
-          question_text: newText,
-          compliance_status: compliance.status === "미준수" ? "경고" as any : "준수",
-          revised_question_text: compliance.revised,
-          compliance_reason: compliance.reason
-        } as any;
-      }
-      return q;
+      if (q.id !== id) return q;
+      return {
+        ...q,
+        question_text: newText,
+        compliance_status: result.compliance_status as any,
+        revised_question_text: result.compliance_status === "준수" ? null : result.revised_question_text,
+        compliance_reason: result.compliance_status === "준수" ? null : result.compliance_reason
+      } as any;
     }));
   };
 
