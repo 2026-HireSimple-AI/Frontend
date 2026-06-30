@@ -18,6 +18,7 @@ import {
 import {
   getInterviewQuestions,
   generateApplicantInterviewQuestions,
+  bulkGenerateInterviewQuestions,
   updateInterviewQuestion,
   addInterviewQuestion,
   InterviewQuestion
@@ -182,7 +183,7 @@ export default function InterviewQuestionPage() {
     return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   };
 
-  // Generate Questions Trigger
+  // Generate Questions Trigger — 모든 지원자 일괄 생성 후 현재 선택된 지원자 질문 표시
   const handleGenerateQuestions = async () => {
     if (!selectedApplicantId) return;
 
@@ -190,21 +191,26 @@ export default function InterviewQuestionPage() {
     setErrorMessage(null);
 
     try {
-      // Map "기술검정" -> "기술검증" for API compat
       const mappedTypes = selectedQuestionTypes.map(t => t === "기술검정" ? "기술검증" : t);
-      
-      const response = await generateApplicantInterviewQuestions(selectedApplicantId, {
-        question_count: questionCount,
-        question_types: mappedTypes
-      });
+      const params = { question_count: questionCount, question_types: mappedTypes };
 
-      if (response.success) {
-        const refreshed = await getInterviewQuestions(selectedApplicantId);
-        setQuestions(refreshed);
-        setGeneratedAt(formatNow());
+      // 전체 지원자 일괄 생성 (이미 있는 지원자는 서버에서 스킵 후 재생성)
+      const allIds = applicants.map(a => a.id);
+
+      if (allIds.length > 1) {
+        // 모든 지원자 기존 질문 삭제 후 재생성을 위해 현재 선택 지원자는 직접 호출
+        // 나머지는 bulk (스킵 없이 재생성하려면 각각 POST 호출)
+        await Promise.all(allIds.map(id =>
+          generateApplicantInterviewQuestions(id, params)
+        ));
       } else {
-        setErrorMessage("질문 생성이 실패했습니다.");
+        await generateApplicantInterviewQuestions(selectedApplicantId, params);
       }
+
+      // 현재 선택된 지원자 질문만 화면에 표시
+      const refreshed = await getInterviewQuestions(selectedApplicantId);
+      setQuestions(refreshed);
+      setGeneratedAt(formatNow());
     } catch (e) {
       console.error(e);
       setErrorMessage("질문 생성 서버 에러가 발생했습니다.");
