@@ -25,7 +25,7 @@ export interface DetailCriterion {
 export interface TypeCriterion {
   id: number;
   criterion_type: string;
-  description: string;
+  description?: string;
   type_weight: number;
   detail_criteria: DetailCriterion[];
 }
@@ -194,6 +194,44 @@ export async function getEvaluationCriteria(jobPostingId: number): Promise<Crite
 }
 
 /**
+ * 3.1.5. 평가 기준 전체 저장 (PUT /job-posting/{job_posting_id}/criteria)
+ * draft 상태의 type_criteria 전체를 보내 기존 항목을 덮어씁니다.
+ */
+export async function saveCriteria(
+  jobPostingId: number,
+  typeCriteria: TypeCriterion[]
+): Promise<CriteriaResponse> {
+  const baseUrl = getApiBaseUrl();
+
+  const response = await fetch(`${baseUrl}/job-posting/${jobPostingId}/criteria`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type_criteria: typeCriteria }),
+  });
+
+  if (!response.ok) {
+    let message = "평가 기준 저장 중 오류가 발생했습니다.";
+    try {
+      const errorJson = await response.json();
+      message = errorJson.detail || message;
+    } catch (e) {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  const json = await response.json();
+  if (!json.success || !json.data) {
+    throw new Error("평가 기준 저장 응답이 올바르지 않습니다.");
+  }
+
+  saveToLocalStorage(`criteria_${jobPostingId}`, json.data);
+  return json.data;
+}
+
+/**
  * 3.2. 대분류 수정 (PATCH /criteria/types/{type_criteria_id})
  */
 export async function updateTypeCriterion(typeCriteriaId: number, data: Partial<TypeCriterion>): Promise<any> {
@@ -242,4 +280,3 @@ export async function updateDetailCriterion(detailCriteriaId: number, data: Part
 
   return { success: true, updated_id: detailCriteriaId };
 }
-

@@ -20,7 +20,7 @@ import BottomNotice from "../components/criteria/BottomNotice";
 import NextStepButton from "../components/criteria/NextStepButton";
 
 import { getJobPosting, formatJobPosting, updateJobPostingTitle  } from "../api/jobPostingApi";
-import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion } from "../api/criteriaApi";
+import { getEvaluationCriteria, createEvaluationCriteria, updateTypeCriterion, updateDetailCriterion, saveCriteria } from "../api/criteriaApi";
 import { uploadResumes, getResumes, deleteResume } from "../api/resumeApi";
 
 import { Sliders, AlertCircle, RefreshCw } from "lucide-react";
@@ -336,33 +336,12 @@ export default function CriteriaReviewPage() {
   };
 
   // 모달 에디터로부터 정밀 저장 요청 수신
-  const handleSaveCriteria = async (updatedList: TypeCriterion[]) => {
-    try {
-      // 1. 상태 업데이트
-      setCriteriaList(updatedList);
-      setIsEditModalOpen(false);
-
-      // 2. 전체 백그라운드 스토리지 업데이트
-      localStorage.setItem(`criteria_${parsedJobId}`, JSON.stringify({ type_criteria: updatedList }));
-
-      // 3. 개 개별 가중치 PATCH 전송 (실제 서버 동기화, 실패해도 로컬은 유지)
-      for (const item of updatedList) {
-        await updateTypeCriterion(item.id, { 
-          criterion_type: item.criterion_type, 
-          type_weight: item.type_weight 
-        });
-        for (const det of item.detail_criteria) {
-          await updateDetailCriterion(det.id, {
-            detail: det.detail,
-            weight: det.weight
-          });
-        }
-      }
-
-    } catch (e) {
-      console.warn("일부 패치 API 동기화가 이루어지지 못했으나, 조율된 데이터는 안전하게 로컬에 백업 보존됩니다.");
-    }
-  };
+const handleSaveCriteria = async (updatedList: TypeCriterion[]) => {
+  const result = await saveCriteria(parsedJobId, updatedList);
+  setCriteriaList(result.type_criteria);
+  localStorage.setItem(`criteria_${parsedJobId}`, JSON.stringify(result));
+  setIsEditModalOpen(false);
+};
 
   // 다음 STEP 3. 지원자 분석 결과 화면 이동
   const handleGoNext = async () => {
