@@ -152,32 +152,12 @@ export default function InterviewQuestionPage() {
 
         setSelectedApplicant(detail);
 
+        setQuestions(fetchedQuestions);
         if (fetchedQuestions.length > 0) {
-          setQuestions(fetchedQuestions);
-          // DB에서 불러온 질문의 생성 시각 표시
           const latestCreatedAt = fetchedQuestions[fetchedQuestions.length - 1]?.created_at;
           if (latestCreatedAt) {
             const d = new Date(latestCreatedAt);
             setGeneratedAt(`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`);
-          }
-        } else {
-          // 질문이 없으면 자동 생성
-          setIsGenerating(true);
-          try {
-            const genResult = await generateApplicantInterviewQuestions(selectedApplicantId, {
-              question_count: 5,
-              question_types: ["행동", "역량", "우려검증", "기술검증", "기타"]
-            });
-            console.log("[DEBUG] 자동 생성 결과:", genResult);
-            if (genResult.success) {
-              const generated = await getInterviewQuestions(selectedApplicantId);
-              if (active) {
-                setQuestions(generated);
-                setGeneratedAt(formatNow());
-              }
-            }
-          } finally {
-            if (active) setIsGenerating(false);
           }
         }
       } catch (e) {

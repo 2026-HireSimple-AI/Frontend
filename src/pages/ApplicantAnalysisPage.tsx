@@ -18,7 +18,7 @@ import {
   ApplicantSummary,
   ApplicantDetail
 } from "../api/applicantApi";
-import { getInterviewQuestions, generateApplicantInterviewQuestions } from "../api/interviewQuestionApi";
+import { bulkGenerateInterviewQuestions } from "../api/interviewQuestionApi";
 
 // @ts-ignore
 import styles from "../styles/ApplicantAnalysisPage.module.css";
@@ -106,21 +106,17 @@ export default function ApplicantAnalysisPage() {
     setIsCountModalOpen(false);
     setIsGenerating(true);
 
-    console.log("[DEBUG] 면접 질문 생성 요청 - applicantId:", primaryId, "jobPostingId:", jobPostingId);
-
     try {
-      const result = await generateApplicantInterviewQuestions(primaryId, {
+      const result = await bulkGenerateInterviewQuestions(selectedApplicantIds, {
         question_count: 5,
         question_types: ["행동", "역량", "우려검증", "기술검증", "기타"]
       });
-      console.log("[DEBUG] 생성 결과:", result);
-      if (!result.success) {
-        alert(`질문 생성 실패: ${result.message}`);
+      if (!result.success && result.errors === selectedApplicantIds.length) {
+        alert("면접 질문 생성에 실패했습니다. 다시 시도해주세요.");
         setIsGenerating(false);
         return;
       }
     } catch (e) {
-      console.error("[DEBUG] 생성 오류:", e);
       alert("질문 생성 중 오류가 발생했습니다.");
       setIsGenerating(false);
       return;
