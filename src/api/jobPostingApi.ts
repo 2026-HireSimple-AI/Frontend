@@ -3,6 +3,7 @@
  * 백엔드(FastAPI)가 아직 없는 경우를 위해 Mock 데이터 형태로 먼저 동작하며, 
  * VITE_API_BASE_URL 환경 변수가 잡히는 즉시 실제 백엔드 API와 연결됩니다.
  */
+import { getToken } from "./authApi"; 
 
 const getApiBaseUrl = (): string => {
   return ((import.meta as any).env?.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '');
@@ -50,6 +51,7 @@ export interface FormattedPostingResponse {
 export async function createJobPosting(sourceUrl: string, title?: string): Promise<JobPostingData> {
   const baseUrl = getApiBaseUrl();
   const calculatedTitle = title || "새로운 백엔드 개발자 채용";
+  const token = getToken();
 
   try {
     // 실제 API 전송 시도
@@ -57,6 +59,7 @@ export async function createJobPosting(sourceUrl: string, title?: string): Promi
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token && { "Authorization": `Bearer ${token}` })
       },
       body: JSON.stringify({
         url: sourceUrl
@@ -129,6 +132,28 @@ export async function getJobPosting(jobPostingId: number): Promise<JobPostingDat
     input_type: "url",
     source_url: "https://example.com/careers/senior-backend"
   };
+}
+
+/**
+ * 1.6. 비회원 공고를 로그인 유저 계정에 연결 (PATCH /job-posting/{id}/claim)
+ */
+export async function claimJobPosting(jobPostingId: number): Promise<void> {
+  const baseUrl = getApiBaseUrl();
+  const token = getToken();
+
+  if (!token) return;  // 토큰 없으면 호출 의미 없음
+
+  try {
+    await fetch(`${baseUrl}/job-posting/${jobPostingId}/claim`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.warn("공고 연결(claim) 실패:", error);
+  }
 }
 
 /**

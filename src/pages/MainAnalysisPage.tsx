@@ -125,15 +125,15 @@ export default function MainAnalysisPage() {
     }
 
     // 이력서 있으면 API 호출 전에 바로 로그인 체크
-    if (selectedFiles.length > 0 && !getToken()) {
-      const goLogin = window.confirm(
-        "이력서 분석은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?"
-      );
-      if (goLogin) {
-        navigate("/login");
-      }
-      return;
-    }
+    // if (selectedFiles.length > 0 && !getToken()) {
+    //   const goLogin = window.confirm(
+    //     "이력서 분석은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?"
+    //   );
+    //   if (goLogin) {
+    //     navigate("/login");
+    //   }
+    //   return;
+    // }
 
     // 초기 상태 청소 및 진행 시작
     setIsLoading(true);
@@ -159,14 +159,30 @@ export default function MainAnalysisPage() {
       await createEvaluationCriteria(currentJobPostingId);
 
       // CASE 2 전용: 4단계 - 이력서 파일 다중 전송 (POST /job-postings/{id}/resumes)
+      // if (selectedFiles.length > 0) {
+      //   setApiStepStatus(`이력서 ${selectedFiles.length}건 마스킹 처리 및 배치 업로드 중...`);
+      //   await uploadResumes(currentJobPostingId, selectedFiles);
+        
+      // } else {
+      //   localStorage.setItem(`uploaded_resumes_${currentJobPostingId}`, JSON.stringify({ uploaded_count: 0, files: [] }));
+      // }
       if (selectedFiles.length > 0) {
+        // 이력서 업로드 직전 로그인 체크
+        if (!getToken()) {
+          sessionStorage.setItem("pending_job_posting_id", String(currentJobPostingId));
+          console.log("[DEBUG] 저장된 job_posting_id:", currentJobPostingId);  // ← 추가
+          console.log("[DEBUG] sessionStorage 확인:", sessionStorage.getItem("pending_job_posting_id"));  // ← 추가
+          setIsLoading(false);
+          navigate("/login");
+          return;
+        }
+
         setApiStepStatus(`이력서 ${selectedFiles.length}건 마스킹 처리 및 배치 업로드 중...`);
         await uploadResumes(currentJobPostingId, selectedFiles);
         
       } else {
         localStorage.setItem(`uploaded_resumes_${currentJobPostingId}`, JSON.stringify({ uploaded_count: 0, files: [] }));
       }
-
       setApiStepStatus("완료! 평가 기준 검증 화면(STEP 2)으로 안전하게 이동합니다.");
 
       // 단기 딜레이 후 강도높은 준수 사항에 따른 라우팅 트리거 (무조건 Criteria Review 페이지로 이동함)
