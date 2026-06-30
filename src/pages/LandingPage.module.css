@@ -1,0 +1,587 @@
+/* LandingPage.module.css — 랜딩 페이지 스타일 */
+
+/* ─── 전역 변수 ─── */
+:root {
+  --navy: #00194B;
+  --bg: #F6F8FC;
+  --ai: #6D5DFC;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --text: #1C1F26;
+  --text-body: #344054;
+  --text-caption: #707887;
+  --text-placeholder: #98A0AE;
+  --border: #E6EAF0;
+  --border-input: #D4D9E1;
+}
+
+/* ─── 기본 래퍼 ─── */
+.page {
+  min-height: 100vh;
+  background-color: var(--bg);
+  font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ─── NAV ─── */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 56px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  backdrop-filter: blur(8px);
+}
+
+.navLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.navLogoIcon {
+  width: 28px;
+  height: 28px;
+  background-color: var(--navy);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.navLogoText {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  letter-spacing: -0.3px;
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnNavSecondary {
+  height: 36px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--border-input);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnNavSecondary:hover {
+  background: var(--bg);
+  border-color: #b8bec8;
+}
+
+.btnNavPrimary {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--navy);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btnNavPrimary:hover {
+  opacity: 0.88;
+}
+
+/* ─── HERO ─── */
+.hero {
+  padding: 120px 32px 80px;
+  text-align: center;
+  background-color: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background-color: #EEEAFF;
+  border: 1px solid #CEC7FF;
+  border-radius: 100px;
+  margin-bottom: 24px;
+}
+
+.heroBadgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--ai);
+  flex-shrink: 0;
+}
+
+.heroBadgeText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ai);
+}
+
+.heroTitle {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  letter-spacing: -0.8px;
+  margin: 0 0 16px;
+}
+
+.heroTitleAccent {
+  color: var(--navy);
+}
+
+.heroDesc {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--text-caption);
+  max-width: 520px;
+  margin: 0 auto 32px;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 56px;
+}
+
+.btnPrimary {
+  height: 44px;
+  padding: 0 24px;
+  background: var(--navy);
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+
+.btnPrimary:hover {
+  opacity: 0.88;
+}
+
+.btnSecondary {
+  height: 44px;
+  padding: 0 24px;
+  background: #fff;
+  border: 1px solid var(--border-input);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnSecondary:hover {
+  background: var(--bg);
+  border-color: #b8bec8;
+}
+
+/* ─── HERO 목업 카드 ─── */
+.heroMockup {
+  max-width: 700px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.mockupBar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mockupDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.mockupDotRed { background: #FF5F57; }
+.mockupDotYellow { background: #FFBD2E; }
+.mockupDotGreen { background: #28C840; }
+
+.mockupLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-caption);
+  margin-left: 8px;
+}
+
+.mockupBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mockupRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mockupType {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #EEF3FA;
+  color: var(--navy);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mockupText {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-body);
+  flex: 1;
+  text-align: left;
+}
+
+.badgeOk {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #DCFCE7;
+  color: #15803D;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badgeDanger {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #FEE2E2;
+  color: #B91C1C;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─── STEPS ─── */
+.steps {
+  padding: 80px 32px;
+  background-color: var(--bg);
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.sectionDesc {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-caption);
+  margin: 0;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.stepCard {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.stepIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+
+.iconBlue { background-color: #EEF3FA; color: var(--navy); }
+.iconPurple { background-color: #EEEAFF; color: var(--ai); }
+.iconGreen { background-color: #DCFCE7; color: #15803D; }
+.iconOrange { background-color: #FEF3C7; color: #92400E; }
+
+.stepNum {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-placeholder);
+  margin-bottom: 4px;
+}
+
+.stepTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.stepDesc {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-caption);
+  margin: 0;
+}
+
+/* ─── FEATURES ─── */
+.features {
+  padding: 80px 32px;
+  background-color: #fff;
+  border-top: 1px solid var(--border);
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.featureCard {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: border-color 0.15s;
+}
+
+.featureCard:hover {
+  border-color: #b8bec8;
+}
+
+.featureIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.featureBody h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.featureBody p {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-caption);
+  margin: 0;
+}
+
+/* ─── STATS ─── */
+.stats {
+  padding: 64px 32px;
+  background-color: var(--bg);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.statNum {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-caption);
+}
+
+/* ─── CTA ─── */
+.cta {
+  padding: 80px 32px;
+  text-align: center;
+  background-color: var(--navy);
+}
+
+.ctaTitle {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  color: #fff;
+  margin: 0 0 12px;
+}
+
+.ctaDesc {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 32px;
+}
+
+.btnCtaPrimary {
+  height: 44px;
+  padding: 0 28px;
+  background: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+
+.btnCtaPrimary:hover {
+  opacity: 0.92;
+}
+
+.btnCtaSecondary {
+  height: 44px;
+  padding: 0 24px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnCtaSecondary:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+
+.ctaActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  padding: 24px 32px;
+  background-color: #fff;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerLogoIcon {
+  width: 22px;
+  height: 22px;
+  background-color: var(--navy);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.footerLogoText {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.footerCopy {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-caption);
+}

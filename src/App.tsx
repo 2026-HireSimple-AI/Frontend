@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import PrivateRoute from "./components/layout/PrivateRoute";
 
 // 페이지 컴포넌트 임포트
+import LandingPage from "./pages/LandingPage";
 import MainAnalysisPage from "./pages/MainAnalysisPage";
 import CriteriaReviewPage from "./pages/CriteriaReviewPage";
 import ApplicantAnalysisPage from "./pages/ApplicantAnalysisPage";
@@ -27,8 +28,8 @@ export default function App() {
   return (
     <BrowserRouter>
        <Routes>
-        {/* 분석 생성 홈 */}
-        <Route path="/" element={<Navigate to="/analysis/new" replace />} />
+        {/* 랜딩 페이지 */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/analysis/new" element={
           <MainAnalysisPage />
         } />
