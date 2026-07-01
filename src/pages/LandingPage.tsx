@@ -1,6 +1,6 @@
 // 이 파일은 서비스 진입 랜딩 페이지입니다.
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import s from "./LandingPage.module.css";
 
@@ -64,6 +64,23 @@ const FEATURES = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const stored = localStorage.getItem("loggedInUser");
+    if (token && stored) {
+      try { setUser(JSON.parse(stored)); } catch { setUser({}); }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("loggedInUser");
+    setUser(null);
+  };
 
   return (
     <div className={s.page}>
@@ -75,12 +92,25 @@ export default function LandingPage() {
           <span className={s.navLogoText}>HireSimple AI</span>
         </div>
         <div className={s.navActions}>
-          <button className={s.btnNavSecondary} onClick={() => navigate("/login")}>
-            로그인
-          </button>
-          <button className={s.btnNavPrimary} onClick={() => navigate("/analysis/new")}>
-            무료로 시작하기
-          </button>
+          {user ? (
+            <>
+              <button className={s.btnNavSecondary} onClick={() => navigate("/dashboard")}>
+                {user.name || user.email || "내 대시보드"}
+              </button>
+              <button className={s.btnNavSecondary} onClick={handleLogout} style={{ marginLeft: 4 }}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              <button className={s.btnNavSecondary} onClick={() => navigate("/login")}>
+                로그인
+              </button>
+              <button className={s.btnNavPrimary} onClick={() => navigate("/analysis/new")}>
+                무료로 시작하기
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -105,9 +135,11 @@ export default function LandingPage() {
           <button className={s.btnPrimary} onClick={() => navigate("/analysis/new")}>
             지금 바로 시작하기 →
           </button>
-          <button className={s.btnSecondary} onClick={() => navigate("/login")}>
-            로그인
-          </button>
+          {!user && (
+            <button className={s.btnSecondary} onClick={() => navigate("/login")}>
+              로그인
+            </button>
+          )}
         </div>
 
         {/* 목업 카드 */}
@@ -199,9 +231,11 @@ export default function LandingPage() {
           <button className={s.btnCtaPrimary} onClick={() => navigate("/analysis/new")}>
             무료로 시작하기 →
           </button>
-          <button className={s.btnCtaSecondary} onClick={() => navigate("/login")}>
-            로그인
-          </button>
+          {!user && (
+            <button className={s.btnCtaSecondary} onClick={() => navigate("/login")}>
+              로그인
+            </button>
+          )}
         </div>
       </section>
 
