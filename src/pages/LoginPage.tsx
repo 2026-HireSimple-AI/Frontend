@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Lock, Mail, Sparkles } from "lucide-react";
 import { login, saveToken } from "../api/authApi";
+import { claimJobPosting } from "../api/jobPostingApi";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,18 +31,33 @@ export default function LoginPage() {
     setErrorText(null);
 
     try {
-      // 실제 API 호출
-      const authData = await login({ email, password });
-      
-      // 토큰 + 유저 정보 저장
-      saveToken(authData);
-      
-      navigate(redirectUrl);
-    } catch (err: any) {
-      setErrorText(err.message || "로그인에 실패했습니다.");
-    } finally {
-      setIsSubmit(false);
-    }
+        const authData = await login({ email, password });
+            saveToken(authData);
+
+            // 케이스 1: MainAnalysisPage에서 이력서 업로드 중 로그인하러 온 경우
+            const pendingId = sessionStorage.getItem("pending_job_posting_id");
+            if (pendingId) {
+                sessionStorage.removeItem("pending_job_posting_id");
+                await claimJobPosting(Number(pendingId));
+                navigate(`/analysis/${pendingId}/criteria-review`);
+                return;
+            }
+
+            // 케이스 2: PrivateRoute에서 막혀서 온 경우 (원래 가려던 경로로 복귀)
+            const pendingPath = sessionStorage.getItem("pending_redirect_path");
+            if (pendingPath) {
+                sessionStorage.removeItem("pending_redirect_path");
+                navigate(pendingPath);
+                return;
+            }
+
+            // 케이스 3: 둘 다 없으면 기존 방식
+            navigate(redirectUrl);
+        } catch (err: any) {
+            setErrorText(err.message || "로그인에 실패했습니다.");
+        } finally {
+            setIsSubmit(false);
+        }
   };
 
   return (

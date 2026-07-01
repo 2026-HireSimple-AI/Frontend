@@ -181,3 +181,32 @@ export async function getApplicantDetail(applicantId: number): Promise<Applicant
   // API도 캐시도 없으면 에러
   throw new Error(`지원자 ${applicantId} 데이터를 불러올 수 없습니다.`);
 }
+
+/**
+ * 4.2. 채용 공고의 모든 지원자 상세 정보 한 번에 조회
+ * (GET /job-postings/{job_posting_id}/applicants-detail)
+ * LLM 호출 없음 → 빠른 초기 로딩용
+ */
+export async function getAllApplicantsDetail(jobPostingId: number): Promise<ApplicantDetail[]> {
+  const baseUrl = getApiBaseUrl();
+
+  try {
+    const response = await fetch(`${baseUrl}/job-postings/${jobPostingId}/applicants-detail`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    });
+
+    if (response.ok) {
+      const json = await response.json();
+      if (json.success && json.data) {
+        return json.data;
+      }
+    }
+  } catch (error) {
+    console.warn("getAllApplicantsDetail API 통신 실패.");
+  }
+
+  return [];
+}
