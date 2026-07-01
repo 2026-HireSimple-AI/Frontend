@@ -184,31 +184,17 @@ export default function InterviewQuestionPage() {
     return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   };
 
-  // Generate Questions Trigger — 모든 지원자 일괄 생성 후 현재 선택된 지원자 질문 표시
-  const handleGenerateQuestions = async () => {
+  // 현재 선택된 지원자만 단일 생성
+  const handleGenerateSingle = async () => {
     if (!selectedApplicantId) return;
-
     setIsGenerating(true);
     setErrorMessage(null);
-
     try {
       const mappedTypes = selectedQuestionTypes.map(t => t === "기술검정" ? "기술검증" : t);
-      const params = { question_count: questionCount, question_types: mappedTypes };
-
-      // 전체 지원자 일괄 생성 (이미 있는 지원자는 서버에서 스킵 후 재생성)
-      const allIds = applicants.map(a => a.id);
-
-      if (allIds.length > 1) {
-        // 모든 지원자 기존 질문 삭제 후 재생성을 위해 현재 선택 지원자는 직접 호출
-        // 나머지는 bulk (스킵 없이 재생성하려면 각각 POST 호출)
-        await Promise.all(allIds.map(id =>
-          generateApplicantInterviewQuestions(id, params)
-        ));
-      } else {
-        await generateApplicantInterviewQuestions(selectedApplicantId, params);
-      }
-
-      // 현재 선택된 지원자 질문만 화면에 표시
+      await generateApplicantInterviewQuestions(selectedApplicantId, {
+        question_count: questionCount,
+        question_types: mappedTypes
+      });
       const refreshed = await getInterviewQuestions(selectedApplicantId);
       setQuestions(refreshed);
       setGeneratedAt(formatNow());
@@ -220,9 +206,31 @@ export default function InterviewQuestionPage() {
     }
   };
 
-  // Regenerate button callback (다시 생성하기)
-  const handleRegenerateQuestions = async () => {
-    await handleGenerateQuestions();
+  // 전체 지원자 일괄 생성 — bulk-generate
+  const handleGenerateQuestions = async () => {
+    if (!selectedApplicantId) return;
+
+    setIsGenerating(true);
+    setErrorMessage(null);
+
+    try {
+      const mappedTypes = selectedQuestionTypes.map(t => t === "기술검정" ? "기술검증" : t);
+      const allIds = applicants.length > 0 ? applicants.map(a => a.id) : [selectedApplicantId];
+
+      await bulkGenerateInterviewQuestions(allIds, {
+        question_count: questionCount,
+        question_types: mappedTypes
+      });
+
+      const refreshed = await getInterviewQuestions(selectedApplicantId);
+      setQuestions(refreshed);
+      setGeneratedAt(formatNow());
+    } catch (e) {
+      console.error(e);
+      setErrorMessage("질문 생성 서버 에러가 발생했습니다.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Edit popups actions
@@ -428,10 +436,12 @@ export default function InterviewQuestionPage() {
               interviewTime={interviewTime}
               questionCount={questionCount}
               selectedQuestionTypes={selectedQuestionTypes}
+              selectedApplicantName={selectedApplicant?.real_name || selectedApplicant?.masked_code}
               onChangeInterviewTime={setInterviewTime}
               onChangeQuestionCount={setQuestionCount}
               onChangeQuestionTypes={setSelectedQuestionTypes}
               onGenerateQuestions={handleGenerateQuestions}
+              onGenerateSingle={selectedApplicantId ? handleGenerateSingle : undefined}
               isGenerating={isGenerating}
             />
           </div>
@@ -442,7 +452,7 @@ export default function InterviewQuestionPage() {
               questions={questions}
               activeQuestionType={activeQuestionType}
               isGenerating={isGenerating}
-              onRegenerate={handleRegenerateQuestions}
+              onRegenerate={handleGenerateQuestions}
               onOpenEditModal={handleOpenEditModal}
               onChangeQuestionType={setActiveQuestionType}
             />

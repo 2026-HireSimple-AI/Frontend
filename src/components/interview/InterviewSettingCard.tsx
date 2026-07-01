@@ -2,24 +2,28 @@ import React from "react";
 import { Sparkles, Minus, Plus } from "lucide-react";
 
 interface InterviewSettingCardProps {
-  interviewTime: string; // "30분", "45분", "60분", "90분"
+  interviewTime: string;
   questionCount: number;
   selectedQuestionTypes: string[];
+  selectedApplicantName?: string;
   onChangeInterviewTime: (time: string) => void;
   onChangeQuestionCount: (count: number) => void;
   onChangeQuestionTypes: (types: string[]) => void;
-  onGenerateQuestions: () => void;
-  isGenerating?: boolean; // make optional to be safe
+  onGenerateQuestions: () => void;       // 전체 지원자 일괄 생성
+  onGenerateSingle?: () => void;         // 현재 지원자만 단일 생성
+  isGenerating?: boolean;
 }
 
 export default function InterviewSettingCard({
   interviewTime = "45분",
   questionCount = 9,
   selectedQuestionTypes = [],
+  selectedApplicantName,
   onChangeInterviewTime,
   onChangeQuestionCount,
   onChangeQuestionTypes,
   onGenerateQuestions,
+  onGenerateSingle,
   isGenerating = false
 }: InterviewSettingCardProps) {
 
@@ -168,8 +172,30 @@ export default function InterviewSettingCard({
         </div>
       </div>
 
-      {/* 4. 질문 생성하기 버튼 */}
+      {/* 4. 질문 생성 버튼 영역 */}
       <div className="pt-2 flex flex-col gap-2" id="action-generation-wrapper">
+
+        {/* 단일 지원자 생성 버튼 */}
+        {onGenerateSingle && (
+          <button
+            type="button"
+            onClick={onGenerateSingle}
+            disabled={isGenerating}
+            className="w-full bg-white hover:bg-slate-50 active:bg-slate-100 text-[#00194B] border border-[#00194B] py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-75"
+            id="generate-single-button-trigger"
+          >
+            <Sparkles size={13} />
+            <span>
+              {isGenerating
+                ? "생성 중..."
+                : selectedApplicantName
+                  ? `${selectedApplicantName}님 질문 생성`
+                  : "선택 지원자 질문 생성"}
+            </span>
+          </button>
+        )}
+
+        {/* 전체 지원자 일괄 생성 버튼 */}
         <button
           type="button"
           onClick={onGenerateQuestions}
@@ -178,8 +204,9 @@ export default function InterviewSettingCard({
           id="generate-button-trigger"
         >
           <Sparkles size={14} />
-          <span>{isGenerating ? "질문 생성 중..." : "질문 생성하기"}</span>
+          <span>{isGenerating ? "질문 생성 중..." : "전체 지원자 질문 생성"}</span>
         </button>
+
         <p className="text-[10px] text-slate-400 font-medium text-center select-none">
           생성에는 약 20~40초가 소요됩니다.
         </p>
