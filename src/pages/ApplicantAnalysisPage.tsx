@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef  } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import PageTitleSection from "../components/applicant/PageTitleSection";
@@ -15,6 +15,7 @@ import { logout } from "../api/authApi";
 import {
   getApplicants,
   getApplicantDetail,
+  getAllApplicantsDetail,
   ApplicantSummary,
   ApplicantDetail
 } from "../api/applicantApi";
@@ -43,10 +44,12 @@ export default function ApplicantAnalysisPage() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [rankingLimit, setRankingLimit] = useState<number>(() => {
-    const saved = localStorage.getItem("selected_ranking_limit");
-    return saved ? Number(saved) : 5;
-  });
-
+  const saved = localStorage.getItem("selected_ranking_limit");
+  return saved ? Number(saved) : 5;
+});
+  // 기존 state들 아래에 추가
+  const [allApplicantsDetail, setAllApplicantsDetail] = useState<ApplicantDetail[]>([]);
+  const allApplicantsDetailRef = useRef<ApplicantDetail[]>([]);
   // 최초 데이터 동기체인성 로드
   useEffect(() => {
     const savedUser = localStorage.getItem("loggedInUser");
@@ -61,38 +64,115 @@ export default function ApplicantAnalysisPage() {
     }
 
     // 1. 지원자 목록 API 호출 연동
-    const loadApplicantsData = async () => {
-      try {
-        setIsPageLoading(true);
-        const jpId = jobPostingId ? Number(jobPostingId) : 1;
-        const fetchedApplicants = await getApplicants(jpId);
-        setApplicants(fetchedApplicants);
+    //   const loadApplicantsData = async () => {
+    //     try {
+    //       setIsPageLoading(true);
+    //       const jpId = jobPostingId ? Number(jobPostingId) : 1;
+    //       const fetchedApplicants = await getApplicants(jpId);
+    //       setApplicants(fetchedApplicants);
 
-        // 첫 번째 지원자를 기본 선택하여 상세 조회
-        if (fetchedApplicants.length > 0) {
-          await handleApplicantSelection(fetchedApplicants[0].id);
+    //       // 첫 번째 지원자를 기본 선택하여 상세 조회
+    //       if (fetchedApplicants.length > 0) {
+    //         await handleApplicantSelection(fetchedApplicants[0].id);
+    //       }
+    //     } catch (err) {
+    //       console.error("지원자 정보 조회 실패:", err);
+    //     } finally {
+    //       setIsPageLoading(false);
+    //     }
+    //   };
+
+    //   loadApplicantsData();
+    // }, [jobPostingId]);
+
+    // 변경 후
+    const loadApplicantsData = async () => {
+        try {
+            setIsPageLoading(true);
+            const jpId = jobPostingId ? Number(jobPostingId) : 1;
+
+            // 기존: 목록만 가져오고 클릭할 때마다 상세 조회
+            // 변경: 모든 지원자 상세 정보를 한 번에 가져옴
+            const allDetail = await getAllApplicantsDetail(jpId);
+            setAllApplicantsDetail(allDetail);
+            allApplicantsDetailRef.current = allDetail;
+
+            // ApplicantSummary 형태로 변환 (랭킹 카드용)
+            const summaryList: ApplicantSummary[] = allDetail.map(d => ({
+                id: d.id,
+                masked_code: d.masked_code,
+                real_name: d.real_name,
+                career: d.career || "신입",
+                total_score: d.score.total_score,
+                requirement_score: d.score.requirement_score,
+                skill_score: d.score.skill_score,
+                task_score: d.score.task_score,
+                preference_score: d.score.preference_score,
+            }));
+            setApplicants(summaryList);
+
+            // 첫 번째 지원자 자동 선택 (DB 접속 없이 state에서)
+            if (allDetail.length > 0) {
+                setSelectedApplicant(allDetail[0]);
+            }
+        } catch (err) {
+            console.error("지원자 정보 조회 실패:", err);
+        } finally {
+            setIsPageLoading(false);
         }
-      } catch (err) {
-        console.error("지원자 정보 조회 실패:", err);
-      } finally {
-        setIsPageLoading(false);
-      }
     };
 
-    loadApplicantsData();
-  }, [jobPostingId]);
+    loadApplicantsData();  // ← 호출
+  }, [jobPostingId]);  // ← useEffect 여기서 닫기
 
   // 해당 지원자의 상세정보 조회
+  // const handleApplicantSelection = async (applicantId: number) => {
+  //   try {
+  //     setIsDetailLoading(true);
+  //     const detail = await getApplicantDetail(applicantId);
+  //     setSelectedApplicant(detail);
+  //   } catch (err) {
+  //     console.error("지원자 상세 조회 에러:", err);
+  //   } finally {
+  //     setIsDetailLoading(false);
+  //   }
+  // };
+
+  // 변경 후
   const handleApplicantSelection = async (applicantId: number) => {
-    try {
-      setIsDetailLoading(true);
-      const detail = await getApplicantDetail(applicantId);
-      setSelectedApplicant(detail);
-    } catch (err) {
-      console.error("지원자 상세 조회 에러:", err);
-    } finally {
-      setIsDetailLoading(false);
-    }
+      // state에서 찾기 (DB 접속 없음)
+      const found = allApplicantsDetailRef.current.find(a => a.id === applicantId);
+
+      if (found) {
+          // 기본 정보는 즉시 표시
+          setSelectedApplicant(found);
+
+          // resume_summary가 비어있으면 LLM 호출 (클릭할 때만)
+          if (!found.resume_summary?.career_summary) {
+              try {
+                  setIsDetailLoading(true);
+                  const detail = await getApplicantDetail(applicantId);
+                  // resume_summary만 업데이트
+                  setSelectedApplicant(prev => prev ? {
+                      ...prev,
+                      resume_summary: detail.resume_summary
+                  } : detail);
+                  // allApplicantsDetail에도 반영 (다음 클릭 시 재호출 방지)
+                  setAllApplicantsDetail(prev => {
+                      const updated = prev.map(a => a.id === applicantId
+                          ? { ...a, resume_summary: detail.resume_summary }
+                          : a
+                      );
+                      allApplicantsDetailRef.current = updated;  // ← 추가
+                      return updated;
+                  });
+              } catch (err) {
+                  console.error("이력서 요약 조회 에러:", err);
+              } finally {
+                  setIsDetailLoading(false);
+              }
+          }
+      }
   };
 
   const handleOpenCountModal = async () => {
