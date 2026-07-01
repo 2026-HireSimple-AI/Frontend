@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import PageTitleSection from "../components/interview/PageTitleSection";
 import AnalysisMetaCard from "../components/interview/AnalysisMetaCard";
@@ -29,6 +29,7 @@ export default function InterviewQuestionPage() {
   const { jobPostingId } = useParams<{ jobPostingId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const parsedJobId = Number(jobPostingId) || 1;
 
@@ -52,8 +53,11 @@ export default function InterviewQuestionPage() {
     "행동", "역량", "우려검증", "기술검정", "기타"
   ]);
 
+  // navigate state로 넘어온 preloaded 질문 (분석 페이지에서 생성 직후 이동 시)
+  const preloadedQuestions: InterviewQuestion[] = (location.state as any)?.preloadedQuestions ?? [];
+
   // Questions pools & filtering
-  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+  const [questions, setQuestions] = useState<InterviewQuestion[]>(preloadedQuestions);
   const [activeQuestionType, setActiveQuestionType] = useState("전체");
 
   // Modal active triggers
@@ -143,12 +147,15 @@ export default function InterviewQuestionPage() {
 
     async function loadApplicantDetailData() {
       try {
-        console.log("[DEBUG] InterviewPage - 질문 조회 applicantId:", selectedApplicantId);
+        // preloaded 질문이 있고 현재 applicant가 첫 진입이면 DB fetch 스킵
+        const usePreloaded = preloadedQuestions.length > 0 &&
+          preloadedQuestions[0]?.applicant_id === applicantId &&
+          questions.length === preloadedQuestions.length;
+
         const [detail, fetchedQuestions] = await Promise.all([
           getApplicantDetail(applicantId),
-          getInterviewQuestions(applicantId)
+          usePreloaded ? Promise.resolve(preloadedQuestions) : getInterviewQuestions(applicantId)
         ]);
-        console.log("[DEBUG] InterviewPage - 조회된 질문 수:", fetchedQuestions.length);
 
         if (!active) return;
 

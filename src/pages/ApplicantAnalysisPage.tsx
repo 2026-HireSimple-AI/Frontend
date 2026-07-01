@@ -19,7 +19,7 @@ import {
   ApplicantSummary,
   ApplicantDetail
 } from "../api/applicantApi";
-import { bulkGenerateInterviewQuestions } from "../api/interviewQuestionApi";
+import { bulkGenerateInterviewQuestions, getInterviewQuestions } from "../api/interviewQuestionApi";
 
 // @ts-ignore
 import styles from "../styles/ApplicantAnalysisPage.module.css";
@@ -196,6 +196,13 @@ export default function ApplicantAnalysisPage() {
         setIsGenerating(false);
         return;
       }
+      // 생성 완료 후 첫 번째 지원자 질문 미리 fetch
+      const preloadedQuestions = await getInterviewQuestions(primaryId);
+
+      navigate(
+        `/analysis/${jobPostingId}/interview-questions?applicantId=${primaryId}&candidateIds=${selectedApplicantIds.join(",")}`,
+        { state: { preloadedQuestions } }
+      );
     } catch (e) {
       alert("질문 생성 중 오류가 발생했습니다.");
       setIsGenerating(false);
@@ -203,10 +210,6 @@ export default function ApplicantAnalysisPage() {
     } finally {
       setIsGenerating(false);
     }
-
-    navigate(
-      `/analysis/${jobPostingId}/interview-questions?applicantId=${primaryId}&candidateIds=${selectedApplicantIds.join(",")}`
-    );
   };
 
   const handleLogout = () => {
