@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { GripVertical, Star, Trash2, Edit2, Check, AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
 import { InterviewQuestion } from "../../api/interviewQuestionApi";
 import ComplianceWarningPanel from "./ComplianceWarningPanel";
+import { checkComplianceLocally, getSuggestedReplacement, getComplianceReason } from "../../utils/complianceCheck";
 
 interface EditableQuestionRowProps {
   question: InterviewQuestion;
@@ -52,8 +53,16 @@ const EditableQuestionRow: React.FC<EditableQuestionRowProps> = ({
     setLocalText(e.target.value);
   };
 
-  // Safe normalize for styles
-  const isViolating = question.compliance_status === "경고" || (question as any).compliance_status === "미준수";
+  // 실시간 키워드 검사 (입력 중에도 즉시 반영)
+  const { status: liveStatus, matchedKeyword } = checkComplianceLocally(localText);
+  const effectiveStatus = liveStatus !== "준수" ? liveStatus : question.compliance_status;
+  const isViolating = effectiveStatus === "경고" || effectiveStatus === "심각" || effectiveStatus === "미준수";
+
+  // 권장 수정안: 실시간 감지된 키워드 기반 → 없으면 DB값 사용
+  const liveRevisedText = matchedKeyword ? getSuggestedReplacement(matchedKeyword) : "";
+  const liveReason = matchedKeyword ? getComplianceReason(matchedKeyword) : "";
+  const displayRevisedText = liveRevisedText || question.revised_question_text || "";
+  const displayReason = liveReason || (question as any).compliance_reason || "";
 
   // Quick category badges style mapping
   const getBadgeStyleClass = (type: string) => {
@@ -161,10 +170,15 @@ const EditableQuestionRow: React.FC<EditableQuestionRowProps> = ({
 
         {/* 5. 검수 결과 */}
         <td className="py-3 px-3 text-center whitespace-nowrap">
-          {isViolating ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold text-red-600 bg-red-50/70 border border-red-100 rounded-md select-none">
-              <ShieldAlert size={12} className="text-red-500" />
-              <span>미준수</span>
+          {effectiveStatus === "심각" ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold text-red-700 bg-red-100 border border-red-300 rounded-md select-none">
+              <ShieldAlert size={12} className="text-red-600" />
+              <span>금지</span>
+            </span>
+          ) : effectiveStatus === "경고" || effectiveStatus === "미준수" ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold text-orange-600 bg-orange-50 border border-orange-200 rounded-md select-none">
+              <AlertTriangle size={12} className="text-orange-500" />
+              <span>경고</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-extrabold text-emerald-600 bg-emerald-50/70 border border-emerald-100 rounded-md select-none">
@@ -206,13 +220,17 @@ const EditableQuestionRow: React.FC<EditableQuestionRowProps> = ({
         <tr>
           <td colSpan={6} className="bg-[#FFFAFA] px-6 py-1 border-b border-slate-150">
             <ComplianceWarningPanel
-              originalQuestionText={question.question_text}
-              revisedQuestionText={question.revised_question_text || ""}
-              complianceReason={
-                (question as any).compliance_reason ||
-                "개인의 성격, 습관, 시간 관리 성향 등을 추측할 수 있는 질문일 가능성이 있어 직무와 무관한 판단으로 이어질 수 있습니다."
-              }
-              onReplace={() => onReplaceWithRecommended(question.id)}
+              originalQuestionText={localText}
+              revisedQuestionText={displayRevisedText}
+              complianceReason={displayReason}
+              onReplace={() => {
+                if (displayRevisedText) {
+                  setLocalText(displayRevisedText);
+                  onChangeQuestionText(question.id, displayRevisedText);
+                } else {
+                  onReplaceWithRecommended(question.id);
+                }
+              }}
             />
           </td>
         </tr>

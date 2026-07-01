@@ -230,6 +230,35 @@ export async function generateApplicantInterviewQuestions(
 }
 
 /**
+ * 5-2. 여러 지원자 면접 질문 일괄 생성 (POST /interview-questions/bulk-generate)
+ * 이미 질문이 있는 지원자는 서버에서 자동으로 스킵.
+ */
+export async function bulkGenerateInterviewQuestions(
+  applicantIds: number[],
+  params?: { question_count: number; question_types: string[] }
+): Promise<{ success: boolean; generated: number; skipped: number; errors: number }> {
+  const baseUrl = getApiBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/interview-questions/bulk-generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        applicant_ids: applicantIds,
+        ...(params || { question_count: 5, question_types: ["행동", "역량", "우려검증", "기술검증", "기타"] })
+      })
+    });
+    if (response.ok) {
+      const json = await response.json();
+      return { success: true, generated: json.generated ?? 0, skipped: json.skipped ?? 0, errors: json.errors ?? 0 };
+    }
+    return { success: false, generated: 0, skipped: 0, errors: applicantIds.length };
+  } catch (err) {
+    console.error("bulkGenerateInterviewQuestions 실패:", err);
+    return { success: false, generated: 0, skipped: 0, errors: applicantIds.length };
+  }
+}
+
+/**
  * 6. 질문 개별 수정 완료 반영 핸들러 (PATCH /interview-questions/{question_id})
  */
 export async function updateInterviewQuestion(

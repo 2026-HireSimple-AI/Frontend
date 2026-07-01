@@ -58,16 +58,38 @@ export async function login(req: LoginRequest): Promise<AuthResponse> {
   return data.data;
 }
 
+// ---------- 세션 만료 시간 (15분) ----------
+const SESSION_TIMEOUT_MS = 15 * 60 * 1000;
+
 // ---------- 토큰 저장/조회/삭제 ----------
 export function saveToken(authData: AuthResponse): void {
   localStorage.setItem("access_token", authData.access_token);
   localStorage.setItem("refresh_token", authData.refresh_token);
   localStorage.setItem("user", JSON.stringify(authData.user));
   localStorage.setItem("loggedInUser", JSON.stringify(authData.user));
+  // 로그인 시각 기록
+  localStorage.setItem("session_expires_at", String(Date.now() + SESSION_TIMEOUT_MS));
+}
+
+// 마지막 활동 시각을 15분 연장 (페이지 이동·클릭 시 호출)
+export function refreshSessionExpiry(): void {
+  if (localStorage.getItem("access_token")) {
+    localStorage.setItem("session_expires_at", String(Date.now() + SESSION_TIMEOUT_MS));
+  }
 }
 
 export function getToken(): string | null {
-  return localStorage.getItem("access_token");
+  const token = localStorage.getItem("access_token");
+  if (!token) return null;
+
+  const expiresAt = Number(localStorage.getItem("session_expires_at") || "0");
+  if (Date.now() > expiresAt) {
+    // 세션 만료 — 자동 로그아웃
+    logout();
+    return null;
+  }
+
+  return token;
 }
 
 export function getUser(): UserInfo | null {
@@ -79,7 +101,8 @@ export function logout(): void {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("user");
-  localStorage.removeItem("loggedInUser"); // 기존 Mock 데이터도 제거
+  localStorage.removeItem("loggedInUser");
+  localStorage.removeItem("session_expires_at");
 }
 
 // ---------- 내 정보 조회 ----------
