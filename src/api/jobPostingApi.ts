@@ -40,6 +40,7 @@ export interface FormattedPostingItem {
 
 export interface FormattedPostingResponse {
   job_posting_id: number;
+  title: string;
   formatted_posting: FormattedPostingItem[];
   skills_stack: string[];
 }
@@ -161,6 +162,7 @@ export async function formatJobPosting(jobPostingId: number): Promise<FormattedP
 
   const mockResult: FormattedPostingResponse = {
     job_posting_id: jobPostingId,
+    title: "공고문 1",
     formatted_posting: [
       {
         category: "자격 조건",
