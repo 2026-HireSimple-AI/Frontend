@@ -190,7 +190,7 @@ export default function ApplicantAnalysisPage() {
       const result = await bulkGenerateInterviewQuestions(selectedApplicantIds, {
         question_count: 5,
         question_types: ["행동", "역량", "우려검증", "기술검증", "기타"]
-      });
+      }, true);
       if (!result.success && result.errors === selectedApplicantIds.length) {
         alert("면접 질문 생성에 실패했습니다. 다시 시도해주세요.");
         setIsGenerating(false);

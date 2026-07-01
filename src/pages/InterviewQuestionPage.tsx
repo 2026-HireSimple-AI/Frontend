@@ -206,7 +206,7 @@ export default function InterviewQuestionPage() {
     }
   };
 
-  // 전체 지원자 일괄 생성 — bulk-generate
+  // 전체 지원자 일괄 생성 — bulk-generate (force=true: 기존 질문 삭제 후 재생성)
   const handleGenerateQuestions = async () => {
     if (!selectedApplicantId) return;
 
@@ -220,7 +220,7 @@ export default function InterviewQuestionPage() {
       await bulkGenerateInterviewQuestions(allIds, {
         question_count: questionCount,
         question_types: mappedTypes
-      });
+      }, true);
 
       const refreshed = await getInterviewQuestions(selectedApplicantId);
       setQuestions(refreshed);

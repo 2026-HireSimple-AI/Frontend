@@ -235,7 +235,8 @@ export async function generateApplicantInterviewQuestions(
  */
 export async function bulkGenerateInterviewQuestions(
   applicantIds: number[],
-  params?: { question_count: number; question_types: string[] }
+  params?: { question_count: number; question_types: string[] },
+  force: boolean = false
 ): Promise<{ success: boolean; generated: number; skipped: number; errors: number }> {
   const baseUrl = getApiBaseUrl();
   try {
@@ -244,7 +245,8 @@ export async function bulkGenerateInterviewQuestions(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         applicant_ids: applicantIds,
-        ...(params || { question_count: 5, question_types: ["행동", "역량", "우려검증", "기술검증", "기타"] })
+        ...(params || { question_count: 5, question_types: ["행동", "역량", "우려검증", "기술검증", "기타"] }),
+        force
       })
     });
     if (response.ok) {
