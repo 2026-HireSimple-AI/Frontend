@@ -1,5 +1,15 @@
 import React, { useRef, useState } from "react";
-import { Upload, FileText, CheckCircle, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, RefreshCw, Trash2, Download } from "lucide-react";
+import { downloadMaskedResumes } from "../../api/resumeApi";
+
+interface ResumeUploadStatusCardProps {
+  jobPostingId: number;
+  uploadedFiles: UploadedFile[];
+  onUploadFiles: (files: File[]) => void;
+  onDeleteFile?: (id: number) => void | Promise<void>;
+  uploadStatusMessage?: string | null;
+  isUploading: boolean;
+}
 
 interface UploadedFile {
   id: number;
@@ -8,15 +18,8 @@ interface UploadedFile {
   status: string; // "마스킹 완료" | "처리 중" | "업로드 중" | "에러"
 }
 
-interface ResumeUploadStatusCardProps {
-  uploadedFiles: UploadedFile[];
-  onUploadFiles: (files: File[]) => void;
-  onDeleteFile?: (id: number) => void | Promise<void>;
-  uploadStatusMessage?: string | null;
-  isUploading: boolean;
-}
-
 export default function ResumeUploadStatusCard({
+  jobPostingId,
   uploadedFiles,
   onUploadFiles,
   onDeleteFile,
@@ -72,6 +75,23 @@ export default function ResumeUploadStatusCard({
     e.target.value = "";
   };
 
+
+  const handleDownloadMaskedResumes = async () => {
+  try {
+    const blob = await downloadMaskedResumes(jobPostingId);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `masked_resumes_${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
   // 상태 배지 매퍼
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -110,13 +130,34 @@ export default function ResumeUploadStatusCard({
     );
   };
 
+  const allMasked =
+    uploadedFiles.length > 0 &&
+    uploadedFiles.every(file => file.status === "마스킹 완료");
+  
   return (
     <div className="bg-[#FFFFFF] border border-[#E6EAF0] rounded-2xl p-6 shadow-sm select-none font-sans flex flex-col gap-4 h-[420px]">
       {/* 타이틀 및 가이드라인 */}
-      <div>
-        <h3 className="text-sm font-bold text-[#1C1F26]">이력서 업로드</h3>
-        <p className="text-[11px] text-[#707887] mt-0.5">평가 기준 확인 후 이력서를 업로드하세요. 최대 5명.</p>
-      </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-[#1C1F26]">이력서 업로드</h3>
+          <p className="text-[11px] text-[#707887] mt-0.5">평가 기준 확인 후 이력서를 업로드하세요. 최대 5명.</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleDownloadMaskedResumes}
+          disabled={!allMasked}
+          className={`px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${
+            allMasked
+              ? "bg-[#00194B] text-[#FFFFFF] hover:bg-[#001235] border border-[#00194B]"
+              : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+          }`}
+          title={allMasked ? "마스킹 완료된 이력서 다운로드" : "모든 이력서의 마스킹이 완료되어야 다운로드할 수 있습니다."}
+        >
+          <Download size={13} />
+          <span>마스킹 다운로드</span>
+        </button>
+        </div>
 
       {/* 안심 마스킹 동의 바 */}
       <div className="flex items-center gap-2 p-2.5 bg-[#EDFDF5] border border-[#BACFFC]/20 rounded-lg text-[10px] text-[#22C55E] font-medium leading-relaxed">

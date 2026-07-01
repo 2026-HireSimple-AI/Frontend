@@ -97,3 +97,15 @@ export async function deleteResume(resumeFileId: number): Promise<void> {
     throw new Error(errorBody?.detail || `이력서 삭제 실패 (status: ${response.status})`);
   }
 }
+
+export async function downloadMaskedResumes(jobPostingId: number): Promise<Blob> {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(
+    `${baseUrl}/job-posting/${jobPostingId}/resumes/masked-download?t=${Date.now()}`,
+    { cache: "no-store" }
+  );
+  if (!response.ok) {
+    throw new Error("다운로드에 실패했습니다.");
+  }
+  return response.blob();
+}

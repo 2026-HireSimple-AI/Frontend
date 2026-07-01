@@ -94,6 +94,7 @@ export default function CriteriaReviewPage() {
       try {
         // 공고 데이터 로딩
         const formatRes = await formatJobPosting(parsedJobId);
+        setJobPostingTitle(formatRes.title || "공고문 1");
 
         const toStringArray = (content: any): string[] => {
           if (Array.isArray(content)) return content;
@@ -445,6 +446,7 @@ const handleSaveCriteria = async (updatedList: TypeCriterion[]) => {
               {/* 오른쪽 열: 이력서 업로드 모니터 카드 */}
               <div className="h-full">
                 <ResumeUploadStatusCard 
+                  jobPostingId={parsedJobId}
                   uploadedFiles={uploadedFiles}
                   onUploadFiles={handleUploadFiles}
                   onDeleteFile={handleDeleteUploadedFile}
