@@ -1,5 +1,5 @@
-import React from "react";
-import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Sparkles, RefreshCw, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { motion } from "motion/react";
 
 interface FormattedPosting {
@@ -20,6 +20,15 @@ export default function JobPostingAnalysisResultCard({
   onRetryExtract,
   errorMessage
 }: JobPostingAnalysisResultCardProps) {
+  const [expandedIndices, setExpandedIndices] = useState<Record<number, boolean>>({});
+
+  const toggleExpand = (idx: number) => {
+    setExpandedIndices((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
+  };
+
   // 배지 스타일 매퍼
   const getBadgeStyle = (category: string) => {
     switch (category) {
@@ -88,23 +97,48 @@ export default function JobPostingAnalysisResultCard({
             className="flex flex-col gap-4 h-full overflow-y-auto pr-1"
           >
             {formattedPostings && formattedPostings.length > 0 ? (
-              formattedPostings.map((post, idx) => (
-                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border-b border-[#F6F8FC] pb-3 last:border-0 last:pb-0 flex-shrink-0">
+              formattedPostings.map((post, idx) => {
+                const isExpanded = !!expandedIndices[idx];
+                const contentArray = Array.isArray(post.content) ? post.content : [post.content];
+                const isLongText = contentArray.join("").length > 85;
+                const isTechStack = post.category === "기술 스택";
+                return (
+                  <div key={idx} className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 border-b border-[#F6F8FC] pb-3 last:border-0 last:pb-0 flex-shrink-0">
                   {/* 카테고리 태그 */}
-                  <div className={`w-[90px] h-[32px] self-start flex items-center justify-center rounded-lg text-xs font-bold flex-shrink-0 ${getBadgeStyle(post.category)}`}>
+                    <div className={`w-[90px] h-[32px] flex items-center justify-center rounded-lg text-xs font-bold flex-shrink-0 mt-0.5 ${getBadgeStyle(post.category)}`}>
                     {post.category}
                   </div>
                   
-                  {/* 내용 설명 - 개별 스크롤 추가 */}
-                  <div className="flex-1 max-h-[72px] overflow-y-auto pr-1">
-                    <ul className="text-xs text-[#344054] font-medium leading-relaxed">
-                  {(Array.isArray(post.content) ? post.content : [post.content]).map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                    </ul>
+                    {/* 내용 설명 및 토글 */}
+                    <div className="flex-1 min-w-0 flex items-start gap-2">
+                      <div className="flex-1">
+                        {isTechStack ? (
+                          <p className={`text-xs text-[#344054] font-medium leading-relaxed ${isExpanded ? "" : "line-clamp-3"}`}>
+                            {contentArray.join(", ")}
+                          </p>
+                        ) : (
+                          <ul className={`text-xs text-[#344054] font-medium leading-relaxed break-all ${isExpanded ? "" : "line-clamp-3"}`}>
+                            {contentArray.map((item, index) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      
+                      {isLongText && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(idx)}
+                          className="flex-shrink-0 p-1 hover:bg-[#F2F4F7] rounded-lg text-[#707887] hover:text-[#1C1F26] transition-colors cursor-pointer mt-0.5"
+                          title={isExpanded ? "접기" : "더보기"}
+                        >
+                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-6 text-xs text-[#98A0AE] h-full flex items-center justify-center">
                 공고 분석 정보가 비어있습니다.
