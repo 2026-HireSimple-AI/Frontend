@@ -118,17 +118,17 @@ export default function LandingPage() {
       <section className={s.hero}>
         <div className={s.heroBadge}>
           <span className={s.heroBadgeDot} />
-          <span className={s.heroBadgeText}>공정채용 법령 자동 검수 탑재</span>
+          <span className={s.heroBadgeText}>채용 전 과정 AI 어시스턴스</span>
         </div>
 
         <h1 className={s.heroTitle}>
-          채용 면접 질문,<br />
-          <span className={s.heroTitleAccent}>AI가 설계하고 법령까지 검수</span>합니다
+          복잡한 채용 과정,<br />
+          <span className={s.heroTitleAccent}>AI가 설계하고 분석</span>해드립니다
         </h1>
 
         <p className={s.heroDesc}>
-          공고문을 넣으면 이력서 분석부터 맞춤 면접 질문 생성,<br />
-          채용절차법 준수 검수까지 한 번에 처리합니다.
+          지원자 적합도 분석부터 면접 질문 생성까지<br />
+          채용 공고 기준으로 맞춤형 인재를 찾아드립니다.
         </p>
 
         <div className={s.heroActions}>
@@ -148,7 +148,7 @@ export default function LandingPage() {
             <span className={`${s.mockupDot} ${s.mockupDotRed}`} />
             <span className={`${s.mockupDot} ${s.mockupDotYellow}`} />
             <span className={`${s.mockupDot} ${s.mockupDotGreen}`} />
-            <span className={s.mockupLabel}>면접 질문 생성 결과 — APPLICANT_001</span>
+            <span className={s.mockupLabel}>지원자 맞춤형 면접 질문 생성 결과</span>
           </div>
           <div className={s.mockupBody}>
             {MOCK_QUESTIONS.map((q, i) => (
